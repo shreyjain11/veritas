@@ -24,6 +24,16 @@ def test_coverage_gate_is_wired() -> None:
     assert "--cov-fail-under=90" in CI
 
 
+def test_unix_sockets_allowed_wherever_network_is_blocked() -> None:
+    # The hermetic policy blocks NETWORK (AF_INET), but asyncio's event-loop
+    # self-pipe and the MCP in-memory transport use local AF_UNIX socketpairs.
+    # Every --disable-socket must be paired with --allow-unix-socket, matching the
+    # conftest's disable_socket(allow_unix_socket=True). Regression guard: a bare
+    # --disable-socket broke test-core on the first CI run (run 27777630398).
+    assert "--allow-unix-socket" in CI
+    assert CI.count("--disable-socket") == CI.count("--allow-unix-socket")
+
+
 def test_clean_checkout_job_builds_installs_and_isolates() -> None:
     assert "clean-checkout" in CI
     assert "uv build --wheel" in CI

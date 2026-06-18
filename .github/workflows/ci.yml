@@ -55,14 +55,16 @@ jobs:
       # and those packages are covered; core veritas still must not import either.
       - run: uv sync --frozen --extra cli --extra mcp
       # --disable-socket makes any core test touching the network fail loudly;
-      # the conftest autouse net enforces the same locally (docs/PLAN.md #20).
+      # --allow-unix-socket permits local AF_UNIX IPC (asyncio's event-loop
+      # self-pipe + the MCP in-memory transport), matching the conftest policy
+      # disable_socket(allow_unix_socket=True). The block is on NETWORK only.
       - name: pytest (hermetic core, no network, 90% coverage gate)
         shell: bash -el {0}
         env:
           HYPOTHESIS_PROFILE: ci
         run: >-
           uv run pytest -m "not external and not scale"
-          --disable-socket
+          --disable-socket --allow-unix-socket
           --cov=veritas --cov-report=term-missing --cov-fail-under=90
 
   package:
@@ -112,7 +114,8 @@ jobs:
           /tmp/full/bin/pip install --quiet "$(ls dist/*.whl)[cli,mcp]"
           /tmp/full/bin/pip install --quiet pytest pytest-cov pytest-socket hypothesis scikit-learn
           /tmp/full/bin/pytest -m "not external and not scale" \
-            --disable-socket --cov=veritas --cov-report=term-missing --cov-fail-under=90
+            --disable-socket --allow-unix-socket \
+            --cov=veritas --cov-report=term-missing --cov-fail-under=90
 
   determinism:
     name: determinism gate (py3.12)
