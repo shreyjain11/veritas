@@ -44,3 +44,11 @@ def test_clean_checkout_job_builds_installs_and_isolates() -> None:
 
 def test_determinism_gate_runs_on_the_pinned_platform() -> None:
     assert "determinism gate (py3.12)" in CI
+
+
+def test_docs_validation_is_enforced_in_ci() -> None:
+    # mkdocs build --strict + the limitations-page-matches-constants honesty test
+    # must run in CI, not just locally: a dedicated docs job installs the docs
+    # extra (so the strict build runs instead of skipping) and runs tests/docs.
+    assert "--extra docs" in CI
+    assert "tests/docs" in CI

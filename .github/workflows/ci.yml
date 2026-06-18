@@ -142,6 +142,22 @@ jobs:
           fi
           exit "$code"
 
+  docs:
+    name: docs (mkdocs build --strict + limitations constants)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      # --extra docs installs mkdocs-material so the strict build actually RUNS
+      # (instead of importorskip-skipping) and the limitations-page-matches-the-
+      # disclosed-constants honesty test is enforced on every push, not just locally.
+      - run: uv sync --frozen --extra docs
+      - name: pytest tests/docs (mkdocs build --strict + docs honesty checks)
+        run: uv run pytest tests/docs --no-cov
+
   network:
     name: network / external (opt-in)
     # Opt-in only: full Pfam-A, AlphaFold-DB, external reproduction datasets,
