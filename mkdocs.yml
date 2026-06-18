@@ -1,0 +1,28 @@
+site_name: Veritas
+site_description: >-
+  Model-agnostic, post-hoc leakage & robustness auditor for sequence-based
+  biological predictors.
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+
+# Internal design docs live under docs/ but are not part of the published site.
+exclude_docs: |
+  PLAN.md
+  SPEC.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - Detectors: detectors.md
+  - Validation: validation.md
+  - Limitations & guarantees: limitations-and-guarantees.md
+  - API: api.md

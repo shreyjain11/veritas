@@ -1,0 +1,163 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint + type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      # --extra cli/mcp install typer + the MCP SDK so mypy can type-check
+      # src/veritas/cli and src/veritas/mcp; import-isolation still proves core
+      # veritas never imports either.
+      - run: uv sync --frozen --extra cli --extra mcp
+      - name: ruff (lint)
+        run: uv run ruff check .
+      - name: ruff (format)
+        run: uv run ruff format --check .
+      - name: mypy --strict
+        run: uv run mypy
+
+  test-core:
+    name: test-core (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      # Pinned bioinformatics binaries for the differential tests (Phase 2+).
+      # The core suite is hermetic/offline: it uses vendored fixtures and these
+      # binaries, but never touches the network.
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+      # --extra cli/mcp install typer + the MCP SDK so the CLI and MCP tests run
+      # and those packages are covered; core veritas still must not import either.
+      - run: uv sync --frozen --extra cli --extra mcp
+      # --disable-socket makes any core test touching the network fail loudly;
+      # the conftest autouse net enforces the same locally (docs/PLAN.md #20).
+      - name: pytest (hermetic core, no network, 90% coverage gate)
+        shell: bash -el {0}
+        env:
+          HYPOTHESIS_PROFILE: ci
+        run: >-
+          uv run pytest -m "not external and not scale"
+          --disable-socket
+          --cov=veritas --cov-report=term-missing --cov-fail-under=90
+
+  package:
+    name: clean-checkout (build wheel, install, run suite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+      - name: Build the wheel
+        run: uv build --wheel
+      # No-extras isolation: a CORE-ONLY install of the built wheel must import
+      # cleanly with none of the optional layers / test-only deps present.
+      - name: Core import-isolation from the installed wheel (no extras)
+        shell: bash -el {0}
+        run: |
+          python -m venv /tmp/core
+          /tmp/core/bin/pip install --quiet --upgrade pip
+          /tmp/core/bin/pip install --quiet dist/*.whl
+          /tmp/core/bin/python - <<'PY'
+          import importlib
+          import sys
+
+          for mod in ("veritas", "veritas.audit", "veritas.contracts", "veritas.report"):
+              importlib.import_module(mod)
+          for forbidden in ("typer", "mcp", "sklearn", "veritas.cli", "veritas.mcp"):
+              assert forbidden not in sys.modules, f"{forbidden} leaked into a core-only install"
+          import veritas
+
+          print("clean wheel import OK, version", veritas.__version__)
+          PY
+      # Run the FULL suite against the INSTALLED wheel (src/ is not on sys.path in
+      # this venv, so `import veritas` resolves to site-packages, not the tree).
+      - name: Run the suite against the installed wheel
+        shell: bash -el {0}
+        env:
+          HYPOTHESIS_PROFILE: ci
+        run: |
+          python -m venv /tmp/full
+          /tmp/full/bin/pip install --quiet --upgrade pip
+          /tmp/full/bin/pip install --quiet "$(ls dist/*.whl)[cli,mcp]"
+          /tmp/full/bin/pip install --quiet pytest pytest-cov pytest-socket hypothesis scikit-learn
+          /tmp/full/bin/pytest -m "not external and not scale" \
+            --disable-socket --cov=veritas --cov-report=term-missing --cov-fail-under=90
+
+  determinism:
+    name: determinism gate (py3.12)
+    # Determinism is only guaranteed on the single pinned platform/version.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: pytest -m determinism
+        run: |
+          set +e
+          uv run pytest -m determinism --no-cov
+          code=$?
+          set -e
+          # Exit code 5 == "no tests collected"; expected until determinism
+          # tests land in Phase 1. Any other non-zero code is a real failure.
+          if [ "$code" -eq 5 ]; then
+            echo "::notice::no determinism-marked tests yet (Phase 0 scaffold)"
+            exit 0
+          fi
+          exit "$code"
+
+  network:
+    name: network / external (opt-in)
+    # Opt-in only: full Pfam-A, AlphaFold-DB, external reproduction datasets,
+    # and scale benchmarks. Never gates core CI.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+      - run: uv sync --frozen
+      # Explicitly re-enable sockets for this opt-in job (overrides any default
+      # blocking); these tests legitimately reach the network / external data.
+      - name: pytest (network / external / scale)
+        shell: bash -el {0}
+        run: uv run pytest -m "external or scale" --force-enable-socket --no-cov

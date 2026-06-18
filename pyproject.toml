@@ -1,0 +1,164 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "veritas-audit"
+description = "Model-agnostic, post-hoc leakage & robustness auditor for sequence-based biological predictors."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Veritas contributors" }]
+keywords = [
+    "bioinformatics",
+    "machine-learning",
+    "data-leakage",
+    "benchmarking",
+    "homology",
+    "audit",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Typing :: Typed",
+]
+dynamic = ["version"]
+
+# Core runtime dependencies. The core must import without the cli/mcp extras or
+# the test-only scikit-learn dependency (SPEC §3 hard rule).
+dependencies = [
+    "pydantic>=2.7",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "polars>=1.0",
+    "datasketch>=1.6",
+    "matplotlib>=3.8",
+    "pyhmmer>=0.10",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+cli = ["typer>=0.12"]
+mcp = ["mcp>=1.0"]
+docs = ["mkdocs-material>=9.5"]
+
+[project.urls]
+Homepage = "https://github.com/shreyjain11/veritas"
+Repository = "https://github.com/shreyjain11/veritas"
+Documentation = "https://shreyjain11.github.io/veritas/"
+Changelog = "https://github.com/shreyjain11/veritas/blob/main/CHANGELOG.md"
+
+# Console entry point (requires the `cli` extra / typer at runtime).
+[project.scripts]
+veritas = "veritas.cli.app:app"
+
+# PEP 735 dependency group, installed by default by `uv sync`. scikit-learn is
+# TEST-ONLY: the differential reference for our hand-rolled metrics. Runtime
+# stays sklearn-free (docs/PLAN.md decision #3).
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "pytest-socket>=0.7",
+    "hypothesis>=6.100",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "scikit-learn>=1.5",
+]
+
+[tool.hatch.version]
+path = "src/veritas/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/veritas"]
+
+# ----------------------------------------------------------------------------
+# Linting / formatting
+# ----------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+    "RUF", # ruff-specific
+]
+
+# ----------------------------------------------------------------------------
+# Typing (gate: mypy --strict)
+# ----------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/veritas", "tests"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+# Per-library `ignore_missing_imports` overrides for untyped third-party deps,
+# added in the phase that first imports each one (keeps mypy's unused-config check clean).
+[[tool.mypy.overrides]]
+module = ["datasketch.*", "matplotlib.*", "scipy.*", "sklearn.*"]
+ignore_missing_imports = true
+
+# pyhmmer ships a py.typed marker but its bundled stubs have a syntax error
+# (plan7.pyi); skip following into it and treat it as untyped.
+[[tool.mypy.overrides]]
+module = ["pyhmmer", "pyhmmer.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+ignore_missing_imports = true
+
+# The MCP SDK's server decorators are not strict-typeable; treat it as untyped
+# (only veritas.mcp.server imports it). Confined there by import-isolation.
+[[tool.mypy.overrides]]
+module = ["mcp", "mcp.*"]
+follow_imports = "skip"
+ignore_missing_imports = true
+
+# server.py wires the SDK's (untyped) @server.list_tools()/@server.call_tool()
+# decorators; allow them there only (the tool logic in tools.py stays fully typed).
+[[tool.mypy.overrides]]
+module = ["veritas.mcp.server"]
+disallow_untyped_decorators = false
+
+# ----------------------------------------------------------------------------
+# Tests + coverage (gate: 90% lines, authoritative per CLAUDE.md)
+# ----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config --cov=veritas --cov-report=term-missing"
+markers = [
+    "requires_mmseqs: needs the pinned mmseqs2 binary",
+    "requires_diamond: needs the pinned diamond binary",
+    "requires_foldseek: needs the pinned foldseek binary",
+    "requires_hmmer: needs the pinned HMMER binaries",
+    "requires_pfam: needs the full Pfam-A database (network, opt-in)",
+    "slow: long-running test",
+    "scale: large-input scale/benchmark test",
+    "external: needs network access or external datasets (opt-in)",
+    "determinism: byte-identical determinism gate (run on the pinned 3.12)",
+]
+
+[tool.coverage.run]
+source = ["veritas"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true

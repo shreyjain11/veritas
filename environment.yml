@@ -1,0 +1,17 @@
+# Pinned bioinformatics binaries for Veritas' contamination detectors.
+#
+# These are NOT Python dependencies (those are managed by uv / pyproject.toml).
+# This conda environment provides ONLY the version-pinned command-line tools the
+# detectors shell out to. Pins are part of the provenance contract — runtime
+# version strings are also captured at audit time (docs/PLAN.md requirement C).
+#
+# Provision and put on PATH with:  source scripts/setup-binaries.sh
+name: veritas-bin
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - mmseqs2=18.8cc5c
+  - diamond=2.2.1
+  - foldseek=10.941cd33
+  - hmmer=3.4

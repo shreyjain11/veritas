@@ -1,0 +1,81 @@
+name: "Veritas leakage audit"
+description: >-
+  Run a Veritas contamination/leakage + robustness audit and (optionally) fail the
+  job if the reported-vs-honest metric gap exceeds a threshold.
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  sequences:
+    description: "Evaluation sequences (FASTA)."
+    required: true
+  table:
+    description: "Eval id,label,prediction table (CSV/TSV/parquet)."
+    required: true
+  reference:
+    description: "Reference / training sequences (FASTA)."
+    required: true
+  config:
+    description: "AuditConfig JSON (detectors, thresholds, seed, ...)."
+    required: true
+  seq-type:
+    description: "Sequence alphabet: protein | nucleotide."
+    required: false
+    default: "protein"
+  metric:
+    description: "Headline metric (auroc, accuracy, spearman, ...)."
+    required: false
+    default: "auroc"
+  out:
+    description: "Path to write the audit report."
+    required: false
+    default: "veritas-report.json"
+  max-delta:
+    description: >-
+      Fail the job if reported-honest delta exceeds this. Leave empty to skip the
+      gate. The gate also fails LOUDLY when the honest metric is undefined
+      (insufficient clean data / undefined metric).
+    required: false
+    default: ""
+
+outputs:
+  report-path:
+    description: "Path to the written audit report."
+    value: ${{ inputs.out }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install pinned bioinformatics binaries
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: veritas-bin
+        create-args: >-
+          -c conda-forge -c bioconda
+          mmseqs2=18.8cc5c diamond=2.2.1 foldseek=10.941cd33 hmmer=3.4
+        cache-environment: true
+    - name: Install veritas-audit
+      shell: bash -el {0}
+      # Install the action's own bundled package (matches the pinned ref; no PyPI dependency).
+      run: pip install "${{ github.action_path }}[cli]"
+    - name: Run audit
+      shell: bash -el {0}
+      run: >-
+        veritas audit
+        --sequences "${{ inputs.sequences }}"
+        --table "${{ inputs.table }}"
+        --reference "${{ inputs.reference }}"
+        --config "${{ inputs.config }}"
+        --seq-type "${{ inputs.seq-type }}"
+        --metric "${{ inputs.metric }}"
+        --out "${{ inputs.out }}"
+    - name: Leakage gate
+      if: ${{ inputs.max-delta != '' }}
+      shell: bash -el {0}
+      run: veritas gate --report "${{ inputs.out }}" --max-delta "${{ inputs.max-delta }}"
+    - name: Upload report artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: veritas-report
+        path: ${{ inputs.out }}

@@ -1,0 +1,24 @@
+name: audit-action (self-test)
+
+# Opt-in: exercises the composite action end-to-end on the committed quickstart
+# example (binary-backed). Not run on PRs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  self-test:
+    name: run the Veritas action on the quickstart example
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Veritas audit (with leakage gate)
+        uses: ./
+        with:
+          sequences: examples/quickstart/eval.fasta
+          table: examples/quickstart/table.csv
+          reference: examples/quickstart/reference.fasta
+          config: examples/quickstart/config.json
+          seq-type: protein
+          metric: accuracy
+          out: report.json
+          max-delta: "0.5"

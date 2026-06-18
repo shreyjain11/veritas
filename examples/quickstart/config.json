@@ -1,0 +1,9 @@
+{
+  "detectors": [
+    { "kind": "sequence", "name": "mmseqs", "identity_threshold": 0.3 }
+  ],
+  "seed": 1729,
+  "deleak_policy": "drop",
+  "stratify_axes": ["identity_to_nearest_reference"],
+  "pinned_versions": { "mmseqs": "18.8cc5c" }
+}
