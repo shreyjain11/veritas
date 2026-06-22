@@ -74,15 +74,49 @@ varied run-to-run — was fixed by sorting before sampling; runs are now byte-st
 The two split-specific assertions (random: full memorizer-null signature; chr8+chr9:
 substantial-but-partial reduction) are locked in `tests/e2e/test_external_repro_overfitnn.py`.
 
+## Reproduction R2 — genomic reverse-complement leakage detection (real results)
+
+A leakage-**detection** demo (not a metric reproduction): does Veritas surface the
+homology a naive genomic split leaves in?
+
+On hashFrag's example naive split, **Veritas detects that 80.8% (1616/2000) of test
+sequences are exact reverse-complements of training sequences** — genuine same-element
+homology. mmseqs nucleotide search runs **both strands** by default, so Veritas's
+detector (run exhaustively) flags these reverse-complement duplicates that a
+forward-only, MinHash-style screen would miss.
+
+hashFrag handles reverse complements **by default** (it generates them when building
+its BLAST database; the `--skip-revcomp` flag toggles this). Its example/tutorial
+commands **explicitly pass `--skip-revcomp`** — the example input already carries both
+orientations as `_Reversed` records — so the **example default** removed **197 (9.85%)**
+test sequences, only **165** of which overlap the reverse-complement set, leaving ~1,450
+reverse-complement duplicates in the "filtered" split.
+
+!!! note "Not a takedown"
+    This is the hashFrag **example** run with its **default** flags, not a claim that
+    hashFrag-the-method is broken or its authors erred. Whether other hashFrag
+    configurations capture this is not assessed here. The point is the opposite: Veritas
+    performs both-strand detection by default and surfaces reverse-complement homology a
+    naive split leaves in — why post-hoc auditing catches what split-creation defaults
+    can miss.
+
+The data facts (80.8% reverse-complement rate; 197 removed; 165 overlap) are verified
+three ways — mmseqs both-strand search, reverse-complement string match, and removed-set
+overlap — and locked in `tests/e2e/test_external_repro_genomic.py` (the string-match
+facts need no binary; the both-strand detection needs mmseqs + adequate memory). The
+assertion is that Veritas detects the reverse-complement leakage (well above a 0.50
+floor) and that it **exceeds the example default's 9.85% removal** — not that it matches
+any cited number.
+
 ## What is still in progress
 
-- **Leakage-rate reproductions (R1/R2)** — Veritas's detected cross-split homology
-  rate vs the published rates (Bushuiev et al. PPI; hashFrag genomic). Cited
-  constants are pinned; the runs are pending.
+- **Leakage-rate reproduction (R1)** — Veritas's detected cross-split homology rate vs
+  Bushuiev et al.'s published PPI leakage rates. Cited constants are pinned; the run is
+  pending.
 - **ProteinGym stratification demo** — MSA-depth silent-failure analysis (no
   contamination claim).
 - **PPI demo** — family + structural contamination on a declared train/test split.
 
 !!! warning "No fabricated results"
-    Only the R3 numbers above come from real runs. The items under *still in
+    Only the R2 and R3 numbers above come from real runs. The items under *still in
     progress* report no numbers until their runs land — the absence is deliberate.

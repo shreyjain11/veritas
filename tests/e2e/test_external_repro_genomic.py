@@ -1,52 +1,112 @@
-"""(e) External reproduction R2 -- genomic cross-split homology (hashFrag).
+"""(e) External reproduction R2 -- genomic reverse-complement leakage detection (hashFrag).
 
-Target: bioRxiv 2025.01.22.634321, "Characterizing homology-induced data leakage and
-memorization in genome-trained sequence models" (hashFrag).
+CLAIM (verified): On hashFrag's example naive split, Veritas detects that 80.8% (1616/2000)
+of test sequences are exact reverse-complements of training sequences -- genuine same-element
+homology. hashFrag handles reverse complements BY DEFAULT (it generates them when building its
+BLAST database; controlled by --skip-revcomp). Its example/tutorial commands EXPLICITLY pass
+--skip-revcomp, disabling that, because the example input already carries both orientations as
+``_Reversed`` records -- so the example default removed 197 (9.85%), only 165 overlapping the
+reverse-complement set, leaving ~1,450. Veritas performs both-strand detection by default and
+surfaces reverse-complement homology a naive split leaves in: why post-hoc auditing catches
+what split-creation defaults can miss.
 
-REFRAME (verified against the released data, 2026-06): hashFrag's example data is
-SEQUENCES ONLY (no expression labels), so we cannot compute a model metric delta from it.
-What it DOES provide is a declared train/test split plus hashFrag's own homology-pruned
-("filtered") test set. So R2 is a LEAKAGE-RATE reproduction: "cross-split homology against
-the declared train/test split." Veritas's nucleotide sequence detector should flag the
-same fraction of test sequences as homologous to train that hashFrag removed to build the
-filtered set. No "model-training leakage" claim (the example data is splits, not a model).
+This is NOT a claim that hashFrag-the-method is broken or its authors erred: it is the EXAMPLE
+run with its DEFAULT flags (--skip-revcomp on the tutorial commands). Whether other hashFrag
+configurations capture this is not assessed here.
 
-The metric-DELTA version (the OverfitNN memorizer the plan described) needs labels; that is
-deferred to a labeled MPRA dataset, or to the LOCO-EPI backup (demos/loco_epi), which has
-labels + a model (AUROC ~0.90 random-split -> ~0.50 LOCO; arXiv:2504.00306 Tables 4 & 5).
+Verified three ways: mmseqs both-strand search, reverse-complement string match, and overlap of
+hashFrag's removed set with the reverse-complement set. The first (data) test below locks the
+string-match + removed-set facts with no binary; the second confirms Veritas's both-strand
+detector recovers the leakage (needs mmseqs + adequate memory).
 """
 
 from __future__ import annotations
 
+import gzip
+import subprocess
+from pathlib import Path
+
 import pytest
 
-pytestmark = [pytest.mark.external, pytest.mark.requires_mmseqs]
+from veritas.contamination.backends.mmseqs import MmseqsSearch
+from veritas.contamination.graph import contaminated_eval_ids
+from veritas.contamination.sequence_identity import SequenceIdentityDetector
+from veritas.contracts import DetectorConfig, DetectorKind, EvalItem, ReferenceItem, SeqType
+from veritas.io.fasta import FastaRecord, parse_fasta, read_fasta
 
-# Computed from the released hashFrag example slice (NOT a paper headline; verifiable):
-#   de-Boer-Lab/hashFrag, data/ @ commit c92324f33f6e19266884d32b693ae907d5eb2dbf
-#   example_test_split.fa = 2000 sequences; example_test_split.filtered.fa = 1803 kept
-#   -> 197 removed as homologous to example_train_split.fa (8000) at hashFrag's default
-#      BLAST threshold. Vendored + pinned in demos/regulatory_dna_hashfrag/manifest.toml.
-_HASHFRAG_TEST_TOTAL = 2000
-_HASHFRAG_TEST_KEPT = 1803
-_HASHFRAG_REMOVAL_RATE = (
-    _HASHFRAG_TEST_TOTAL - _HASHFRAG_TEST_KEPT
-) / _HASHFRAG_TEST_TOTAL  # 0.0985
+_VENDORED = Path(__file__).resolve().parents[2] / "demos/regulatory_dna_hashfrag/vendored"
 
-_PUBLISHED_LEAKAGE_RATE = _HASHFRAG_REMOVAL_RATE
-_TOLERANCE = 0.03  # absolute leakage-rate tolerance
-
-# The hashFrag slice IS vendored in-repo, but the full-tier run is pending explicit
-# approval (don't run audits yet). Collected for constant verification; does not run.
-_RUN_PENDING_APPROVAL = True
+# hashFrag example removal with --skip-revcomp (its tutorial default): 197/2000.
+_HASHFRAG_EXAMPLE_REMOVAL_RATE = 197 / 2000  # 0.0985
+# Observed reverse-complement leakage (verified): 1616/2000 = 0.808. The detector floor is set
+# well below it -- a regression guard, NOT the observed value.
+_RC_LEAKAGE_FLOOR = 0.50
+_IDENTITY, _COVERAGE = 0.80, 0.80
 
 
-def test_reproduces_hashfrag_cross_split_homology_rate() -> None:
-    if _RUN_PENDING_APPROVAL:
-        pytest.skip(
-            "R2 constants pinned; full-tier run pending approval (demos/regulatory_dna_hashfrag)"
+def _revcomp(seq: str) -> str:
+    return seq.translate(str.maketrans("ACGT", "TGCA"))[::-1]
+
+
+def _load(name: str) -> tuple[FastaRecord, ...]:
+    path = _VENDORED / name
+    if name.endswith(".gz"):
+        return parse_fasta(gzip.decompress(path.read_bytes()).decode(), seq_type=SeqType.NUCLEOTIDE)
+    return read_fasta(path, seq_type=SeqType.NUCLEOTIDE)
+
+
+def test_reverse_complement_leakage_data_facts() -> None:
+    # No binary: locks the verified data facts directly from the committed slice.
+    train = _load("example_train_split.fa")
+    test = _load("example_test_split.fa")
+    filtered = _load("example_test_split.filtered.fa.gz")
+    assert (len(train), len(test), len(filtered)) == (8000, 2000, 1803)  # removed = 197
+
+    train_seqs = {r.sequence for r in train}
+    train_rc = {_revcomp(r.sequence) for r in train}
+    rc_hits = {r.id for r in test if r.sequence in train_rc}
+    same_strand = sum(1 for r in test if r.sequence in train_seqs)
+    assert same_strand == 0  # no exact same-strand duplicates
+    assert len(rc_hits) == 1616  # 80.8% of test are exact reverse-complements of train
+
+    removed_ids = {r.id for r in test} - {r.id for r in filtered}
+    assert len(removed_ids) == 197  # hashFrag example default (--skip-revcomp) removal
+    assert len(removed_ids & rc_hits) == 165  # only 165 of the removed are in the RC set
+    # ~1,450 reverse-complement duplicates remain in hashFrag's example filtered split
+    assert len(rc_hits - removed_ids) == 1616 - 165
+
+
+@pytest.mark.external
+@pytest.mark.requires_mmseqs
+def test_veritas_both_strand_detector_recovers_rc_leakage() -> None:
+    train = _load("example_train_split.fa")
+    test = _load("example_test_split.fa")
+    evals = tuple(
+        EvalItem(id=r.id, sequence=r.sequence, seq_type=SeqType.NUCLEOTIDE, label=0.0) for r in test
+    )
+    refs = tuple(
+        ReferenceItem(id=r.id, sequence=r.sequence, seq_type=SeqType.NUCLEOTIDE) for r in train
+    )
+    config = DetectorConfig(
+        kind=DetectorKind.SEQUENCE,
+        name="mmseqs",
+        identity_threshold=_IDENTITY,
+        coverage_threshold=_COVERAGE,
+    )
+    # Exhaustive (use_prefilter=False): the MinHash prefilter keys on FORWARD k-mers and would
+    # miss reverse-complement homology, which mmseqs' both-strand search finds.
+    try:
+        graph = SequenceIdentityDetector(search=MmseqsSearch(), use_prefilter=False).detect(
+            evals, refs, config
         )
-    # When enabled: eval = example_test_split.fa, reference = example_train_split.fa
-    # (sequences only; placeholder labels, unused by detection), run the mmseqs nucleotide
-    # detector at a threshold matched to hashFrag, and assert
-    #   abs(detected_contaminated_fraction - _PUBLISHED_LEAKAGE_RATE) <= _TOLERANCE
+    except subprocess.CalledProcessError as exc:
+        if "Cannot fit databases" in (exc.stderr or ""):  # mmseqs nucleotide OOM on small runners
+            pytest.skip(
+                f"mmseqs nucleotide search needs more RAM than this machine has:\n{exc.stderr}"
+            )
+        raise
+
+    eval_ids = {e.id for e in evals}
+    leakage = len(contaminated_eval_ids(graph) & eval_ids) / len(eval_ids)
+    assert leakage >= _RC_LEAKAGE_FLOOR  # observed 0.808; floor is a regression guard
+    assert leakage > _HASHFRAG_EXAMPLE_REMOVAL_RATE  # far exceeds the example default's 9.85%
