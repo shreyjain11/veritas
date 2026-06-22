@@ -24,16 +24,28 @@ from veritas.contamination.graph import contaminated_eval_ids
 from veritas.contamination.sequence_identity import SequenceIdentityDetector
 from veritas.contamination.subprocess_runner import CommandResult
 from veritas.contracts import DetectorConfig, DetectorKind, EvalItem, ReferenceItem, SeqType
+from veritas.io.fasta import read_fasta
 
-# Real ~100 bp genomic windows (not low-complexity) for nucleotide-search tests.
+# A short genomic window for the HERMETIC argv tests (the fake runner never invokes mmseqs,
+# so its content is irrelevant).
 _DNA_DUP = (
     "GTAGGCTCACCCATGCCTTTGGGTTTCCTGGACCTCCCCTTGGGAGGATGGCTCTGCAGAGGGG"
     "CTTTAATGTGAGATGTGAGCTCCTCACCACTGGGGG"
 )
-_DNA_UNREL = (
-    "AAGAAGCAAGCTGTTCCCCCGCCCGTGTCCTATTTTCTACAGAGGGCCTGTGCCTTCACGGTGC"
-    "CCCCCTTCCGGGAAGGACTCGCCTGGGAGTGAGTTT"
+
+# Binary-backed nucleotide tests use REAL 200 bp genomic windows from the committed (MIT)
+# hashFrag slice -- mmseqs nucleotide search is fragile on tiny/short synthetic inputs
+# (it failed on Linux CI for short fragments), so we feed it realistic 200 bp sequences.
+_VENDORED_DNA = (
+    Path(__file__).resolve().parents[2]
+    / "demos/regulatory_dna_hashfrag/vendored/example_test_split.fa"
 )
+
+
+def _real_dna(n: int) -> list[str]:
+    return [
+        record.sequence for record in read_fasta(_VENDORED_DNA, seq_type=SeqType.NUCLEOTIDE)[:n]
+    ]
 
 
 class _CapturingRunner:
@@ -119,18 +131,25 @@ def test_mmseqs_golden_recovers_planted_duplicate() -> None:
 
 @pytest.mark.requires_mmseqs
 def test_mmseqs_detects_nucleotide_duplicate() -> None:
-    # End-to-end nucleotide search (needs --search-type 3): an exact DNA duplicate is found.
+    # End-to-end nucleotide search (needs --search-type 3) on real 200 bp genomic windows:
+    # an exact DNA duplicate of a reference is found.
+    seqs = _real_dna(5)
+    dup = seqs[0]
     evals = (
-        EvalItem(id="e_dup", sequence=_DNA_DUP, seq_type=SeqType.NUCLEOTIDE, label=1.0),
-        EvalItem(id="e_unrel", sequence=_DNA_UNREL, seq_type=SeqType.NUCLEOTIDE, label=0.0),
+        EvalItem(id="e_dup", sequence=dup, seq_type=SeqType.NUCLEOTIDE, label=1.0),
+        EvalItem(id="e_other", sequence=seqs[1], seq_type=SeqType.NUCLEOTIDE, label=0.0),
     )
-    refs = (ReferenceItem(id="r1", sequence=_DNA_DUP, seq_type=SeqType.NUCLEOTIDE),)
+    refs = (
+        ReferenceItem(id="r_dup", sequence=dup, seq_type=SeqType.NUCLEOTIDE),
+        *(
+            ReferenceItem(id=f"r{i}", sequence=s, seq_type=SeqType.NUCLEOTIDE)
+            for i, s in enumerate(seqs[2:])
+        ),
+    )
     graph = SequenceIdentityDetector(search=MmseqsSearch(), use_prefilter=False).detect(
         evals, refs, _config(identity=0.9, coverage=0.8)
     )
-    contaminated = contaminated_eval_ids(graph)
-    assert "e_dup" in contaminated
-    assert "e_unrel" not in contaminated
+    assert "e_dup" in contaminated_eval_ids(graph)  # exact duplicate of r_dup
 
 
 @pytest.mark.requires_mmseqs
@@ -194,12 +213,14 @@ def test_mmseqs_differential_matches_raw_run_nucleotide(tmp_path: Path) -> None:
     # Guards the --search-type 3 fix: the detector's nucleotide path must agree with a raw
     # mmseqs run that ALSO passes --search-type 3. If the flag regressed, the wrapper would
     # die or diverge from raw and this differential would fail (it cannot regress silently).
-    evals = {"e_dup": _DNA_DUP, "e_unrel": _DNA_UNREL}
-    refs = {"r1": _DNA_DUP, "r2": _DNA_UNREL[::-1]}
+    # Real 200 bp genomic windows; e_dup is an exact duplicate of r_dup.
+    seqs = _real_dna(6)
+    evals = {"e_dup": seqs[0], "e_a": seqs[1], "e_b": seqs[2]}
+    refs = {"r_dup": seqs[0], "r_c": seqs[3], "r_d": seqs[4], "r_e": seqs[5]}
     query, target, out = tmp_path / "q.fasta", tmp_path / "t.fasta", tmp_path / "res.m8"
     query.write_text("".join(f">{k}\n{v}\n" for k, v in evals.items()))
     target.write_text("".join(f">{k}\n{v}\n" for k, v in refs.items()))
-    subprocess.run(
+    proc = subprocess.run(
         [
             "mmseqs",
             "easy-search",
@@ -212,10 +233,11 @@ def test_mmseqs_differential_matches_raw_run_nucleotide(tmp_path: Path) -> None:
             "--format-output",
             "query,target,fident,qcov,tcov,evalue,bits",
         ],
-        check=True,
         capture_output=True,
         text=True,
     )
+    if proc.returncode != 0:  # surface mmseqs' own diagnostic if it ever fails (e.g. on a runner)
+        pytest.fail(f"raw mmseqs nucleotide search failed (rc={proc.returncode}):\n{proc.stderr}")
     raw_pairs = {
         (h.eval_id, h.ref_id)
         for h in parse_m8(out.read_text())
@@ -232,7 +254,7 @@ def test_mmseqs_differential_matches_raw_run_nucleotide(tmp_path: Path) -> None:
         (e.eval_id, e.ref_id) for e in detector.detect(eval_items, ref_items, _config()).edges
     }
     assert detector_pairs == raw_pairs
-    assert ("e_dup", "r1") in detector_pairs  # the planted nucleotide duplicate is found
+    assert ("e_dup", "r_dup") in detector_pairs  # the planted nucleotide duplicate is found
 
 
 @pytest.mark.requires_diamond
