@@ -10,7 +10,7 @@ from veritas.contamination.backends._common import to_fasta
 from veritas.contamination.executables import resolve_executable
 from veritas.contamination.hits import SequenceHit
 from veritas.contamination.subprocess_runner import CommandRunner, run_command
-from veritas.contracts import EvalItem, ReferenceItem
+from veritas.contracts import EvalItem, ReferenceItem, SeqType
 
 # query,target,fident(0..1),qcov(0..1),tcov(0..1),evalue,bits
 _FORMAT_OUTPUT = "query,target,fident,qcov,tcov,evalue,bits"
@@ -61,19 +61,20 @@ class MmseqsSearch:
             query.write_text(to_fasta(eval_items))
             target.write_text(to_fasta(reference_items))
             binary = self.binary_path or self._binary_name
-            self._runner(
-                [
-                    binary,
-                    "easy-search",
-                    str(query),
-                    str(target),
-                    str(out),
-                    str(tmp / "mmseqs_tmp"),
-                    "--format-output",
-                    _FORMAT_OUTPUT,
-                ],
-                cwd=tmp,
-                timeout=self._timeout,
-            )
+            argv = [
+                binary,
+                "easy-search",
+                str(query),
+                str(target),
+                str(out),
+                str(tmp / "mmseqs_tmp"),
+                "--format-output",
+                _FORMAT_OUTPUT,
+            ]
+            # mmseqs refuses to guess the alphabet: nucleotide search must be requested
+            # explicitly (protein is the default, so it needs no flag).
+            if eval_items and eval_items[0].seq_type is SeqType.NUCLEOTIDE:
+                argv += ["--search-type", "3"]
+            self._runner(argv, cwd=tmp, timeout=self._timeout)
             hits = parse_m8(out.read_text())
         return [hit for hit in hits if (hit.eval_id, hit.ref_id) in candidate_pairs]
