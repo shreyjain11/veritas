@@ -1,30 +1,36 @@
 name = "proteingym_dms"
-license = "MIT (OATML-Markslab/ProteinGym)"
+license = "MIT (OATML-Markslab/ProteinGym); cite the underlying assay papers (assays.bib)"
 redistributable = true
 description = """
-ProteinGym DMS substitutions, for the STRATIFICATION demo (difficulty axis = \
-MSA_Neff_L_category). License is MIT, so a curated slice MAY be committed -- but the \
-slice is not yet materialized here: the substitutions live in a ~1GB upstream zip that \
-was not downloaded in this environment, so its sha256 is unpinned and slice_files is \
-empty. To materialize: download the zip on a capable host, extract the chosen assay \
-CSVs, record their sha256 in slice_files, and commit them under vendored/. The \
-reference metadata CSV (small) IS pinned below. No model-training contamination claim \
-is made for ProteinGym (stratification only).
+ProteinGym DMS substitutions, for the MSA-depth STRATIFICATION demo (no contamination
+claim). License is MIT, but the slice is FETCH-ONLY BY CHOICE (not committed): the data
+is large and easily re-fetched. All three upstream archives are pinned below; the user
+fetches them with scripts/fetch_demo_data.py. Baseline whose performance is stratified =
+ESM-1v (ensemble), from ProteinGym's zero-shot substitution scores (Meier et al., NeurIPS
+2021). Claim is correlational only: Veritas recovers the MSA-depth performance gradient
+ProteinGym/ESM-1v document; not a causal MSA-depth claim (depth correlates with family /
+organism / assay-type and observational data cannot fully de-confound).
 """
 slice_spec = """
-3 DMS assay CSVs spanning MSA_Neff_L_category Low/Medium/High (columns \
-mutant, mutated_sequence, DMS_score, DMS_score_bin) + their rows from \
-reference_files/DMS_substitutions.csv (DMS_id, UniProt_ID, target_seq, \
-MSA_Neff_L_category) + a model score file normalized to (mutant, score)
+~10-15 assays per MSA_Neff_L_category bucket (Low/Medium/High), selected neutrally
+(alphabetical by DMS_id, single_mutants >= 100, present in the scores zip). Single-
+substitution variants only. Per assay: Spearman(DMS_score, ESM1v_ensemble); per bucket:
+MEAN of per-assay Spearman (never pooled cross-assay), with assay count and spread.
 """
 
-# Upstream substitutions archive. UNPINNED: ~1GB, not downloaded here; pin before fetch.
-# URL is the documented ProteinGym download location (verify at materialization time).
+# Substitutions archive (LABELS): pinned (downloaded + checksummed in this environment).
 [[sources]]
-url = "https://marks.hms.harvard.edu/proteingym/DMS_ProteinGym_substitutions.zip"
-role = "archive"
+url = "https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/DMS_ProteinGym_substitutions.zip"
+sha256 = "3a83766254ac9ac9984ec25cb73c6e010ea4418f5e35f143933e6b6e6473b921"
+role = "archive_labels"
 
-# Reference metadata CSV (pinned; downloaded + checksummed in this environment).
+# Zero-shot substitution model scores (incl. ESM1v_ensemble + DMS_score per assay): pinned.
+[[sources]]
+url = "https://marks.hms.harvard.edu/proteingym/ProteinGym_v1.3/zero_shot_substitutions_scores.zip"
+sha256 = "3fd7cdb5e78f1d43cabfabfeb6578c252b63af23ba2ab44db0094dc3a42de36d"
+role = "archive_scores"
+
+# Reference metadata CSV (DMS_id, UniProt_ID, target_seq, MSA_Neff_L_category): pinned.
 [[sources]]
 url = "https://raw.githubusercontent.com/OATML-Markslab/ProteinGym/main/reference_files/DMS_substitutions.csv"
 sha256 = "a8f498011532a74aa9fe556a50555a75e928c5837d19c06a87592ae04049b308"
