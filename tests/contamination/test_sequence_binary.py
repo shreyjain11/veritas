@@ -48,6 +48,17 @@ def _real_dna(n: int) -> list[str]:
     ]
 
 
+def _skip_if_mmseqs_oom(stderr: str) -> None:
+    # mmseqs reserves a large nucleotide k-mer index and aborts ("Cannot fit databases into
+    # NG") on memory-limited machines (e.g. ~7 GB CI runners) even for tiny inputs. Skip the
+    # binary nucleotide checks there -- the hermetic argv tests already guard the
+    # --search-type 3 flag, and these binary checks validate the real search where RAM allows.
+    if "Cannot fit databases" in stderr:
+        pytest.skip(
+            f"mmseqs nucleotide search needs more RAM than this machine has:\n{stderr.strip()}"
+        )
+
+
 class _CapturingRunner:
     """Fake runner: records argv and writes an empty .m8 so parse_m8 succeeds (no binary)."""
 
@@ -146,9 +157,13 @@ def test_mmseqs_detects_nucleotide_duplicate() -> None:
             for i, s in enumerate(seqs[2:])
         ),
     )
-    graph = SequenceIdentityDetector(search=MmseqsSearch(), use_prefilter=False).detect(
-        evals, refs, _config(identity=0.9, coverage=0.8)
-    )
+    try:
+        graph = SequenceIdentityDetector(search=MmseqsSearch(), use_prefilter=False).detect(
+            evals, refs, _config(identity=0.9, coverage=0.8)
+        )
+    except subprocess.CalledProcessError as exc:
+        _skip_if_mmseqs_oom(exc.stderr or "")
+        raise
     assert "e_dup" in contaminated_eval_ids(graph)  # exact duplicate of r_dup
 
 
@@ -236,7 +251,8 @@ def test_mmseqs_differential_matches_raw_run_nucleotide(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
-    if proc.returncode != 0:  # surface mmseqs' own diagnostic if it ever fails (e.g. on a runner)
+    if proc.returncode != 0:
+        _skip_if_mmseqs_oom(proc.stderr)  # skip on memory-limited runners; else surface the error
         pytest.fail(f"raw mmseqs nucleotide search failed (rc={proc.returncode}):\n{proc.stderr}")
     raw_pairs = {
         (h.eval_id, h.ref_id)
