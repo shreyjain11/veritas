@@ -27,3 +27,18 @@ def test_build_record_defaults_runtime_versions_empty() -> None:
         pinned_versions={"mmseqs": "18.8cc5c"},
     )
     assert record.runtime_versions == {}
+
+
+def test_extra_input_hashes_are_merged_verbatim_not_rehashed() -> None:
+    # Vendored data-slice hashes are already sha256 of the file bytes; they must land
+    # in input_hashes as-is, alongside the content-hashed in-memory inputs.
+    slice_hash = "b" * 64
+    record = build_provenance_record(
+        inputs={"benchmark": {"a": 1}},
+        params={},
+        seed=1,
+        pinned_versions={},
+        extra_input_hashes={"dataset:demo:assay.csv": slice_hash},
+    )
+    assert record.input_hashes["benchmark"] == content_hash({"a": 1})
+    assert record.input_hashes["dataset:demo:assay.csv"] == slice_hash

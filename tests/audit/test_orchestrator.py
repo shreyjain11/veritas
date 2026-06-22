@@ -123,6 +123,28 @@ def test_resolved_binary_path_is_recorded_in_provenance() -> None:
     assert report.provenance.params["resolved_binaries"]["planted"] == pinned_path
 
 
+def test_dataset_hashes_are_recorded_and_pinned_into_the_audit_hash() -> None:
+    # A demo/repro audit pins its vendored data slice: the slice sha256 is recorded in
+    # provenance.input_hashes AND, because input_hashes is hashed content, it changes
+    # the audit_hash -- so a report cannot be reproduced against different bytes.
+    case = make_golden_audit()
+    base = run_audit(
+        case.config,
+        case.inputs,
+        detector_factory=case.detector_factory,
+        version_runner=case.version_runner,
+    )
+    pinned = run_audit(
+        case.config,
+        case.inputs,
+        detector_factory=case.detector_factory,
+        version_runner=case.version_runner,
+        dataset_hashes={"dataset:demo:assay.csv": "a" * 64},
+    )
+    assert pinned.provenance.input_hashes["dataset:demo:assay.csv"] == "a" * 64
+    assert pinned.audit_hash != base.audit_hash
+
+
 def test_runtime_versions_are_captured_through_the_injected_runner() -> None:
     # req C: backend versions are captured at run time. The injected runner keeps it
     # hermetic; its output must actually reach the provenance record.

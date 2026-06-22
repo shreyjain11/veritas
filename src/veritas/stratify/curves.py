@@ -26,6 +26,10 @@ class BucketResult(FrozenModel):
     index: int
     lo: float
     hi: float
+    # Human-readable bucket label. None for numeric (equal-width) buckets -- the
+    # report then renders the "[lo, hi)" range; set for categorical buckets, where
+    # it carries the category name (e.g. an MSA-depth "Low"/"Medium"/"High").
+    label: str | None = None
     n: int
     estimate: MetricEstimate
 
@@ -71,26 +75,13 @@ def _estimate(
     return MetricEstimate(value=value, status=ResultStatus.OK, ci_low=low, ci_high=high)
 
 
-def performance_curve(
-    eval_items: Sequence[EvalItem],
-    axis_values: Mapping[str, float],
-    bins: Bins,
-    metric_spec: MetricSpec,
-    *,
-    axis_name: str = "identity_to_nearest_reference",
-    n_bootstrap: int = 1000,
-    ci_level: float = 0.95,
-    seed: int,
-    min_bucket_n: int = 2,
-) -> StratifiedCurve:
-    name = metric_spec.name
-    threshold = metric_spec.threshold if metric_spec.threshold is not None else 0.5
-    n_bins = bins.n_bins()
-
-    bucket_members: list[list[int]] = [[] for _ in range(n_bins)]
+def _labels_and_predictions(
+    eval_items: Sequence[EvalItem], axis_values: Mapping[str, object]
+) -> tuple[_FloatArray, _FloatArray]:
+    """Validate every item has a prediction and an axis value; return label/pred arrays."""
     labels_list: list[float] = []
     predictions_list: list[float] = []
-    for i, item in enumerate(eval_items):
+    for item in eval_items:
         if item.prediction is None:
             raise ValueError(f"eval item {item.id!r} has no prediction; cannot compute a metric")
         if item.id not in axis_values:
@@ -99,9 +90,30 @@ def performance_curve(
             )
         labels_list.append(item.label)
         predictions_list.append(item.prediction)
-        bucket_members[bins.assign(axis_values[item.id])].append(i)
-    labels = np.asarray(labels_list, dtype=np.float64)
-    predictions = np.asarray(predictions_list, dtype=np.float64)
+    return (
+        np.asarray(labels_list, dtype=np.float64),
+        np.asarray(predictions_list, dtype=np.float64),
+    )
+
+
+def _assemble_curve(
+    *,
+    labels: _FloatArray,
+    predictions: _FloatArray,
+    bucket_members: Sequence[Sequence[int]],
+    bucket_bounds: Sequence[tuple[float, float]],
+    bucket_labels: Sequence[str | None],
+    metric_spec: MetricSpec,
+    axis_name: str,
+    n_bootstrap: int,
+    ci_level: float,
+    seed: int,
+    min_bucket_n: int,
+) -> StratifiedCurve:
+    """Build a curve from pre-bucketed members. Shared by numeric + categorical axes,
+    so both go through the SAME per-bucket ``min_bucket_n`` -> INSUFFICIENT guard."""
+    name = metric_spec.name
+    threshold = metric_spec.threshold if metric_spec.threshold is not None else 0.5
 
     def estimate(y: _FloatArray, p: _FloatArray, min_n: int) -> MetricEstimate:
         return _estimate(
@@ -116,13 +128,16 @@ def performance_curve(
         )
 
     buckets: list[BucketResult] = []
-    for index in range(n_bins):
-        rows = np.asarray(bucket_members[index], dtype=np.intp)
+    for index, (members, (lo, hi), label) in enumerate(
+        zip(bucket_members, bucket_bounds, bucket_labels, strict=True)
+    ):
+        rows = np.asarray(members, dtype=np.intp)
         buckets.append(
             BucketResult(
                 index=index,
-                lo=bins.edges[index],
-                hi=bins.edges[index + 1],
+                lo=lo,
+                hi=hi,
+                label=label,
                 n=int(rows.size),
                 estimate=estimate(labels[rows], predictions[rows], min_bucket_n),
             )
@@ -136,4 +151,83 @@ def performance_curve(
         buckets=tuple(buckets),
         aggregate=aggregate,
         status=aggregate.status,
+    )
+
+
+def performance_curve(
+    eval_items: Sequence[EvalItem],
+    axis_values: Mapping[str, float],
+    bins: Bins,
+    metric_spec: MetricSpec,
+    *,
+    axis_name: str = "identity_to_nearest_reference",
+    n_bootstrap: int = 1000,
+    ci_level: float = 0.95,
+    seed: int,
+    min_bucket_n: int = 2,
+) -> StratifiedCurve:
+    labels, predictions = _labels_and_predictions(eval_items, axis_values)
+    n_bins = bins.n_bins()
+    bucket_members: list[list[int]] = [[] for _ in range(n_bins)]
+    for i, item in enumerate(eval_items):
+        bucket_members[bins.assign(axis_values[item.id])].append(i)
+    return _assemble_curve(
+        labels=labels,
+        predictions=predictions,
+        bucket_members=bucket_members,
+        bucket_bounds=[(bins.edges[k], bins.edges[k + 1]) for k in range(n_bins)],
+        bucket_labels=[None] * n_bins,
+        metric_spec=metric_spec,
+        axis_name=axis_name,
+        n_bootstrap=n_bootstrap,
+        ci_level=ci_level,
+        seed=seed,
+        min_bucket_n=min_bucket_n,
+    )
+
+
+def categorical_performance_curve(
+    eval_items: Sequence[EvalItem],
+    axis_values: Mapping[str, str],
+    metric_spec: MetricSpec,
+    *,
+    axis_name: str,
+    categories: Sequence[str] | None = None,
+    n_bootstrap: int = 1000,
+    ci_level: float = 0.95,
+    seed: int,
+    min_bucket_n: int = 2,
+) -> StratifiedCurve:
+    """One bucket per category. ``categories`` fixes the bucket order (a declared
+    category with no items becomes an empty -> INSUFFICIENT bucket); when omitted,
+    the observed categories are used in sorted order."""
+    labels, predictions = _labels_and_predictions(eval_items, axis_values)
+    observed = [axis_values[item.id] for item in eval_items]
+    cats = tuple(categories) if categories is not None else tuple(sorted(set(observed)))
+    index_of = {category: i for i, category in enumerate(cats)}
+
+    bucket_members: list[list[int]] = [[] for _ in cats]
+    for i, item in enumerate(eval_items):
+        category = axis_values[item.id]
+        if category not in index_of:
+            raise ValueError(
+                f"eval item {item.id!r} has category {category!r} "
+                f"not in declared categories {cats!r}"
+            )
+        bucket_members[index_of[category]].append(i)
+
+    return _assemble_curve(
+        labels=labels,
+        predictions=predictions,
+        bucket_members=bucket_members,
+        # Categorical buckets have no numeric range; use the index as a synthetic
+        # bound and carry the meaning in the label.
+        bucket_bounds=[(float(i), float(i)) for i in range(len(cats))],
+        bucket_labels=list(cats),
+        metric_spec=metric_spec,
+        axis_name=axis_name,
+        n_bootstrap=n_bootstrap,
+        ci_level=ci_level,
+        seed=seed,
+        min_bucket_n=min_bucket_n,
     )

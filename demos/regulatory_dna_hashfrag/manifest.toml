@@ -1,0 +1,40 @@
+name = "regulatory_dna_hashfrag"
+license = "MIT (de-Boer-Lab/hashFrag)"
+redistributable = true
+description = """
+hashFrag example MPRA splits (de-Boer-Lab/hashFrag, data/ @ commit \
+c92324f33f6e19266884d32b693ae907d5eb2dbf). MIT-licensed, so the curated slice is \
+committed under vendored/. NOTE: these files are SEQUENCES ONLY (no expression \
+labels) -- they support the R2 leakage-RATE reproduction (cross-split homology \
+against the declared train/test split), not a model metric delta. The filtered \
+split is hashFrag's homology-pruned test set: 197 of 2000 test sequences removed \
+(9.85%) at its default BLAST threshold (train 8000 / test 2000 / filtered 1803).
+"""
+slice_spec = "train split (8000) + test split (2000) + homology-filtered test (1803 kept)"
+
+[[sources]]
+url = "https://raw.githubusercontent.com/de-Boer-Lab/hashFrag/main/data/example_train_split.fa"
+sha256 = "681f0fe3cad9e2adabcd774ffaf5f40927e435e5b155af9ada146b1f1d733c6e"
+role = "train_split"
+
+[[sources]]
+url = "https://raw.githubusercontent.com/de-Boer-Lab/hashFrag/main/data/example_test_split.fa"
+sha256 = "7256a7dafabe8a63270fef8e9b05d6d0e5711b3dc34f99ee4a1ad5e537d38776"
+role = "test_split"
+
+[[sources]]
+url = "https://raw.githubusercontent.com/de-Boer-Lab/hashFrag/main/data/example_test_split.filtered.fa"
+sha256 = "d3c7f6e4de7ed26815206fa84bf2d547e49e4804e9677fd8e9aab80e4f9751c4"
+role = "filtered_test_split"
+
+[[slice_files]]
+path = "vendored/example_train_split.fa"
+sha256 = "681f0fe3cad9e2adabcd774ffaf5f40927e435e5b155af9ada146b1f1d733c6e"
+
+[[slice_files]]
+path = "vendored/example_test_split.fa"
+sha256 = "7256a7dafabe8a63270fef8e9b05d6d0e5711b3dc34f99ee4a1ad5e537d38776"
+
+[[slice_files]]
+path = "vendored/example_test_split.filtered.fa.gz"
+sha256 = "d3c7f6e4de7ed26815206fa84bf2d547e49e4804e9677fd8e9aab80e4f9751c4"

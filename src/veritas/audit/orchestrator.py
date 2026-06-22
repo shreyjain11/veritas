@@ -73,7 +73,9 @@ def _strata(
                 StratumResult(
                     axis_name=axis_name,
                     bucket_index=bucket.index,
-                    bucket_label=f"[{bucket.lo}, {bucket.hi})",
+                    bucket_label=(
+                        bucket.label if bucket.label is not None else f"[{bucket.lo}, {bucket.hi})"
+                    ),
                     n=bucket.n,
                     metric=_trace(f"{axis_name}#{bucket.index}", bucket.estimate, provenance_ref),
                     is_silent_failure=bucket.index in flagged,
@@ -88,7 +90,11 @@ def run_audit(
     *,
     detector_factory: DetectorFactory = get_detector,
     version_runner: Runner | None = None,
+    dataset_hashes: dict[str, str] | None = None,
 ) -> AuditReport:
+    """Run the full audit. ``dataset_hashes`` (e.g. a vendored slice's sha256, from a
+    DatasetManifest) are recorded verbatim in provenance.input_hashes, pinning the
+    report to exact data bytes (they feed the audit_hash)."""
     graph = detect(config, inputs, detector_factory=detector_factory)
     comparison = rescore(config, inputs, graph)
     curves = stratify(config, inputs, graph)
@@ -118,6 +124,7 @@ def run_audit(
         # Pinned versions are DECLARED (config), not probed from the running binary.
         pinned_versions=dict(config.pinned_versions),
         runtime_versions=runtime_versions,
+        extra_input_hashes=dataset_hashes,
     )
     provenance_ref = audit_hash(provenance)
 

@@ -15,8 +15,13 @@ def build_provenance_record(
     seed: int,
     pinned_versions: dict[str, str],
     runtime_versions: dict[str, str] | None = None,
+    extra_input_hashes: dict[str, str] | None = None,
 ) -> ProvenanceRecord:
+    # In-memory inputs are content-hashed; extra_input_hashes are already file digests
+    # (e.g. vendored data-slice sha256s) and are merged verbatim.
     input_hashes = {name: content_hash(value) for name, value in inputs.items()}
+    if extra_input_hashes:
+        input_hashes.update(extra_input_hashes)
     return ProvenanceRecord(
         input_hashes=input_hashes,
         params=params,

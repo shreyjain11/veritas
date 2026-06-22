@@ -1,0 +1,31 @@
+name = "proteingym_dms"
+license = "MIT (OATML-Markslab/ProteinGym)"
+redistributable = true
+description = """
+ProteinGym DMS substitutions, for the STRATIFICATION demo (difficulty axis = \
+MSA_Neff_L_category). License is MIT, so a curated slice MAY be committed -- but the \
+slice is not yet materialized here: the substitutions live in a ~1GB upstream zip that \
+was not downloaded in this environment, so its sha256 is unpinned and slice_files is \
+empty. To materialize: download the zip on a capable host, extract the chosen assay \
+CSVs, record their sha256 in slice_files, and commit them under vendored/. The \
+reference metadata CSV (small) IS pinned below. No model-training contamination claim \
+is made for ProteinGym (stratification only).
+"""
+slice_spec = """
+3 DMS assay CSVs spanning MSA_Neff_L_category Low/Medium/High (columns \
+mutant, mutated_sequence, DMS_score, DMS_score_bin) + their rows from \
+reference_files/DMS_substitutions.csv (DMS_id, UniProt_ID, target_seq, \
+MSA_Neff_L_category) + a model score file normalized to (mutant, score)
+"""
+
+# Upstream substitutions archive. UNPINNED: ~1GB, not downloaded here; pin before fetch.
+# URL is the documented ProteinGym download location (verify at materialization time).
+[[sources]]
+url = "https://marks.hms.harvard.edu/proteingym/DMS_ProteinGym_substitutions.zip"
+role = "archive"
+
+# Reference metadata CSV (pinned; downloaded + checksummed in this environment).
+[[sources]]
+url = "https://raw.githubusercontent.com/OATML-Markslab/ProteinGym/main/reference_files/DMS_substitutions.csv"
+sha256 = "a8f498011532a74aa9fe556a50555a75e928c5837d19c06a87592ae04049b308"
+role = "reference_metadata"

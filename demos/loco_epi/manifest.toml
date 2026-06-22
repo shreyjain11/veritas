@@ -1,0 +1,21 @@
+name = "loco_epi"
+license = "no license file in malikmtahir/EPI (all rights reserved by default)"
+redistributable = false
+description = """
+Backup genomic reproduction (LOCO-EPI, Tahir et al., arXiv:2504.00306). FETCH-ONLY: \
+the source repository has NO license file, so by default all rights are reserved and \
+the slice must not be committed. Unlike hashFrag's label-free example splits, LOCO-EPI \
+HAS labels + a model, so it is the metric-DELTA target: a baseline CNN scores AUROC \
+~0.90 under a random split (Table 4: 0.8999-0.9477 across six cell lines) and collapses \
+to ~0.46-0.54 under leave-one-chromosome-out (Table 5), a drop of ~0.40 attributed to \
+cross-chromosome genomic-region leakage.
+"""
+slice_spec = """
+INPUT_DATA enhancer-promoter pairs + FOLDS chromosome assignments, to build a \
+random-split test set vs a leave-one-chromosome-out test set for one cell line
+"""
+
+# Repository (UNPINNED: not downloaded; no license, so fetch-only for local use only).
+[[sources]]
+url = "https://github.com/malikmtahir/EPI"
+role = "repo"

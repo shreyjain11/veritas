@@ -1,0 +1,22 @@
+name = "ppi_bushuiev"
+license = "PPIRef code MIT (anton-bushuiev/PPIRef); underlying SKEMPI v2.0 / DIPS / PDB data carry their own academic terms"
+redistributable = false
+description = """
+R1 reproduction (Bushuiev et al., arXiv:2404.10457, "Revealing data leakage in \
+protein interaction benchmarks"). FETCH-ONLY: the PPIRef analysis package is MIT, but \
+the underlying PPI benchmark data (SKEMPI v2.0, DIPS, PDB structures) are not clearly \
+redistributable, so no slice is committed. IMPORTANT REFRAME: the paper releases no \
+trained model and reports LEAKAGE RATES (iDist), not model-performance deltas -- so R1 \
+is a leakage-RATE reproduction (Veritas's detected cross-split homology fraction vs the \
+paper's reported leakage rate). No "model-training leakage" claim (no released model).
+"""
+slice_spec = """
+a PPI benchmark with a DECLARED train/test split (e.g. SKEMPI v2.0 under a \
+PPI-code-based split), proteins (+ optional interface PDBs), to measure the fraction of \
+test PPIs homologous to the train split
+"""
+
+# Analysis code / data access (UNPINNED: not downloaded here).
+[[sources]]
+url = "https://github.com/anton-bushuiev/PPIRef"
+role = "code"

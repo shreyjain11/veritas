@@ -25,3 +25,18 @@ def identity_to_nearest_reference(
 def label_class(eval_items: Sequence[EvalItem]) -> dict[str, float]:
     """Per eval id, its label -- a categorical difficulty axis."""
     return {item.id: item.label for item in eval_items}
+
+
+def metadata_category(eval_items: Sequence[EvalItem], key: str) -> dict[str, str]:
+    """Per eval id, a categorical value read straight from ``EvalItem.metadata[key]``.
+
+    The difficulty grade is supplied by the benchmark (e.g. ProteinGym's
+    ``MSA_Neff_L_category``), not computed here. Every item must carry the key --
+    a missing one is a clear error, not a silent default bucket.
+    """
+    values: dict[str, str] = {}
+    for item in eval_items:
+        if key not in item.metadata:
+            raise ValueError(f"eval item {item.id!r} is missing metadata key {key!r}")
+        values[item.id] = str(item.metadata[key])
+    return values

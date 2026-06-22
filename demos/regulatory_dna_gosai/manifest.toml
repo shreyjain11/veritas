@@ -1,0 +1,32 @@
+name = "regulatory_dna_gosai"
+license = "see notes: GAME Zenodo record states CC-BY-4.0; the upstream Gosai et al. preprint mentions CC-BY-NC-4.0"
+redistributable = false
+description = """
+Gosai et al. 2024 human lentiMPRA (de Boer lab), for the OverfitNN METRIC reproduction
+(R3) -- the reported-vs-honest centerpiece. 776,474 genomic 200 bp sequences with \
+measured activity (log2FC) in K562 / HepG2 / SK-N-SH, plus a chromosome column.
+
+FETCH-ONLY BY DELIBERATE CHOICE (license safeguard): the GAME Zenodo record 14757152 \
+states CC-BY-4.0, but the upstream Gosai et al. Nature 2024 preprint mentions \
+CC-BY-NC-4.0. Rather than rely on the repackaging's relicensing, this repo NEVER hosts \
+the bytes -- it carries only this manifest (Zenodo URL + pinned sha256 + slice spec) and \
+the user fetches from Zenodo themselves (scripts/fetch_demo_data.py). So the NonCommercial \
+question never touches our repository. No slice is committed.
+
+Same lab as hashFrag, so the OverfitNN memorizer hashFrag describes applies directly: a \
+similarity-nearest-neighbour predictor inflates on homologous test sequences and \
+collapses once they are removed.
+"""
+slice_spec = """
+chromosome-holdout split of the K562_log2FC activity: hold out chr8 + chr9 as the TEST \
+set, all other autosomes as the TRAIN/reference set; subsample to a VM-sized run (target \
+~20,000 train + ~5,000 test, seeded). Columns used from the file: sequence, chr, \
+K562_log2FC (label). The inner data file is \
+evaluator_data/41586_2024_8070_MOESM4_ESM.txt (~280 MB) inside the archive.
+"""
+
+# Upstream archive on Zenodo (record 14757152). Pinned; fetch verifies this sha256.
+[[sources]]
+url = "https://zenodo.org/records/14757152/files/evaluator_data.zip"
+sha256 = "dcdd92c42cb12cfcf9c2d60cb3e522811dfad437078693811aa0674d0da9d3e1"
+role = "archive"

@@ -22,16 +22,21 @@ from veritas.contracts import (
 from veritas.metrics import HonestComparison, compute_honest
 from veritas.stratify import (
     StratifiedCurve,
+    categorical_performance_curve,
     fixed_bins,
     identity_to_nearest_reference,
     label_class,
+    metadata_category,
     performance_curve,
 )
 
 DetectorFactory = Callable[[str], ContaminationDetector]
 
-#: Fixed number of difficulty buckets per stratification axis.
+#: Fixed number of difficulty buckets per (numeric) stratification axis.
 _N_BINS = 4
+
+#: A ``metadata:<key>`` axis buckets eval items by the categorical EvalItem.metadata[key].
+_METADATA_PREFIX = "metadata:"
 
 
 def detect(
@@ -78,6 +83,19 @@ def _axis_values(
 def _curve_for_axis(
     axis_name: str, benchmark: Benchmark, graph: ContaminationGraph, config: AuditConfig
 ) -> StratifiedCurve:
+    if axis_name.startswith(_METADATA_PREFIX):
+        key = axis_name[len(_METADATA_PREFIX) :]
+        if not key:
+            raise ValueError(f"metadata stratification axis needs a key: {axis_name!r}")
+        return categorical_performance_curve(
+            benchmark.eval_items,
+            metadata_category(benchmark.eval_items, key),
+            benchmark.metric,
+            axis_name=axis_name,
+            seed=config.seed,
+            n_bootstrap=config.bootstrap_n,
+            ci_level=config.ci_level,
+        )
     axis_values = _axis_values(axis_name, benchmark.eval_items, graph)
     return performance_curve(
         benchmark.eval_items,

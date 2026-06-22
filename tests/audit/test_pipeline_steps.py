@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import pytest
 
-from tests.factories import make_golden_audit
+from tests.factories import AuditCase, make_golden_audit
 from veritas.audit import detect, rescore, run_audit, stratify
 from veritas.contamination.graph import contaminated_eval_ids
-from veritas.contracts import ContaminationGraph
+from veritas.contracts import AuditInputs, ContaminationGraph
 
 
 def test_detect_returns_a_contamination_graph() -> None:
@@ -52,6 +52,43 @@ def test_stratify_rejects_an_unknown_axis() -> None:
     config = case.config.model_copy(update={"stratify_axes": ("bogus_axis",)})
     graph = detect(config, case.inputs, detector_factory=case.detector_factory)
     with pytest.raises(ValueError, match="unknown stratification axis"):
+        stratify(config, case.inputs, graph)
+
+
+def _tagged_inputs(case: AuditCase, depths: tuple[str, ...]) -> AuditInputs:
+    # Tag each eval item with a categorical metadata field so a metadata axis can bucket it.
+    tagged = tuple(
+        item.model_copy(update={"metadata": {"depth": depths[i % len(depths)]}})
+        for i, item in enumerate(case.inputs.benchmark.eval_items)
+    )
+    benchmark = case.inputs.benchmark.model_copy(update={"eval_items": tagged})
+    return case.inputs.model_copy(update={"benchmark": benchmark})
+
+
+def test_stratify_supports_a_metadata_category_axis() -> None:
+    case = make_golden_audit()
+    inputs = _tagged_inputs(case, ("Low", "High"))
+    config = case.config.model_copy(update={"stratify_axes": ("metadata:depth",)})
+    graph = detect(config, inputs, detector_factory=case.detector_factory)
+    curves = stratify(config, inputs, graph)
+    assert curves[0].axis_name == "metadata:depth"
+    assert {b.label for b in curves[0].buckets} == {"Low", "High"}
+
+
+def test_metadata_axis_labels_strata_with_category_names() -> None:
+    case = make_golden_audit()
+    inputs = _tagged_inputs(case, ("Low", "High"))
+    config = case.config.model_copy(update={"stratify_axes": ("metadata:depth",)})
+    report = run_audit(config, inputs, detector_factory=case.detector_factory)
+    labels = {s.bucket_label for s in report.stratification}
+    assert labels == {"Low", "High"}  # category names, not "[lo, hi)" ranges
+
+
+def test_metadata_axis_requires_a_key() -> None:
+    case = make_golden_audit()
+    config = case.config.model_copy(update={"stratify_axes": ("metadata:",)})
+    graph = detect(config, case.inputs, detector_factory=case.detector_factory)
+    with pytest.raises(ValueError, match="needs a key"):
         stratify(config, case.inputs, graph)
 
 
