@@ -54,7 +54,37 @@ Family (HMMER) and structural (Foldseek) detectors are **protein-only**, and
 structural detection requires user-provided structures. Sequence-identity
 detection applies to protein and nucleotide sequences.
 
-## Validation in progress
-The demonstration suite and external reproductions are not yet reported — see
-[Validation](validation.md). No demonstration or reproduction numbers appear in
-these docs until the benchmarks are finalized.
+### Structural detection is fold-level, not interface-level
+The structural detector reports a **fold-level** TM-score (Foldseek monomer
+TMalign, `max(qtmscore, ttmscore)`). This is a related but **more permissive**
+signal than **interface-level** redundancy (e.g. iDist / iAlign): two complexes can
+share a fold while their binding interfaces differ. The PPI demonstration's
+structural rates are therefore reported as their own quantity and are **not directly
+comparable** to interface-redundancy baselines — see [Validation](validation.md).
+
+### Nucleotide sequence search is memory-intensive
+MMseqs2 nucleotide search reserves a large k-mer index and can exceed available RAM
+on memory-limited machines (e.g. ~7 GB CI runners), aborting with "Cannot fit
+databases into NG" even on small inputs. The binary nucleotide differential tests
+skip on such runners; the hermetic argv tests still guard the invocation flags
+(`--search-type 3`), so a regression in *how* the search is called cannot pass
+unnoticed.
+
+## Validation
+The demonstration / external-reproduction suite is **complete**: four
+demonstrations report real, locked numbers on pinned data — see
+[Validation](validation.md). No numbers on these pages are fabricated.
+
+## Future work
+Known edges, recorded honestly so they are not silently dropped:
+
+- **Interface-level structural detection.** Add a true interface-level mode
+  (interface alignment, e.g. iAlign-style, or Foldseek multimer) so PPI structural
+  leakage can be compared *numerically* to interface-redundancy baselines rather
+  than corroborated qualitatively against the current fold-level signal.
+- **BCa bootstrap intervals.** Confidence intervals use the percentile bootstrap,
+  which under-covers at small n (≈0.927 at n=25; see above). Bias-corrected-and-
+  accelerated (BCa) intervals would improve small-n coverage; not yet implemented.
+- **Lower-memory nucleotide search.** Provide a reduced-memory path (or a documented
+  minimum-RAM requirement) so nucleotide search runs on small CI runners without the
+  binary tests having to skip.

@@ -238,11 +238,21 @@ The three parts are locked in `tests/e2e/test_demo_ppi.py` as **qualitative** as
 while a detector going silent (or crying wolf on a clean split) still fails it. Data is
 fetch-only except the public-domain per-chain sequences (`demos/ppi_bushuiev/manifest.toml`).
 
-## All five demonstrations are complete
+## The demonstration suite is complete
 
-R3 (OverfitNN metric reproduction), R2 (reverse-complement detection), ProteinGym
-(MSA-depth stratification), and PPI (family + structural detection, above) all report real,
-locked numbers. There are no remaining demos in progress.
+Four demonstrations — **R3** (OverfitNN metric reproduction), **R2** (reverse-complement
+detection), **ProteinGym** (MSA-depth stratification), and **PPI** (family + structural
+detection, above) — all report real, locked numbers. Nothing remains in progress.
+
+The originally-planned standalone PPI leakage-rate reproduction (**"R1"**) was **folded into
+the unified PPI demo** above, after investigation showed a direct sequence-identity-vs-iDist
+comparison would be invalid (the paper's iDist is interface-level; Veritas's structural
+detector is fold-level — they measure different things). The PPI section corroborates
+Bushuiev et al.'s thesis qualitatively rather than reproducing an iDist number.
+
+Scoped future work (interface-level structural detection, BCa bootstrap intervals, a
+lower-memory nucleotide path) is recorded under
+[Limitations & guarantees](limitations-and-guarantees.md#future-work).
 
 !!! warning "No fabricated results"
     Every number on this page — R3, R2, ProteinGym, and PPI — comes from a real run on

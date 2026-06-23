@@ -7,11 +7,14 @@ it produces a rigorous, fully provenance-stamped audit: cross-set contamination
 detection, the reported-vs-honest metric on the de-leaked set, and a stratified
 "silent failure" analysis.
 
-> **Status:** The audit engine and its interfaces are **complete and validated**
-> (100% test coverage; `ruff`, `ruff format`, and `mypy --strict` all gate). The
-> **demonstration suite and external reproduction are in progress, pending
-> benchmark finalization** — no demonstration or reproduction results are
-> reported until those land (see [`docs/validation.md`](docs/validation.md)). No
+> **Status:** The audit engine, its interfaces, **and the validation suite** are
+> **complete** (100% test coverage; `ruff`, `ruff format`, and `mypy --strict` all
+> gate). Four demonstrations/reproductions — OverfitNN homology inflation (R3),
+> genomic reverse-complement detection (R2), ProteinGym MSA-depth stratification,
+> and PPI family + structural leakage detection — report **real, locked numbers on
+> pinned data** (see [`docs/validation.md`](docs/validation.md); known edges and
+> scoped future work are in
+> [`docs/limitations-and-guarantees.md`](docs/limitations-and-guarantees.md)). No
 > results are fabricated.
 
 ## Install

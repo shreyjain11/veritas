@@ -34,9 +34,9 @@ black-box API.
   inside the report (and are hashed into it).
 
 !!! note "Validation status"
-    The engine and interfaces are complete and validated by the test suite. The
-    demonstration suite and external reproductions are in progress pending
-    benchmark finalization — see [Validation](validation.md). No demonstration
-    or reproduction results are reported until those land.
+    The engine, interfaces, and the **validation suite** are complete: four
+    demonstrations/reproductions report real, locked numbers on pinned data — see
+    [Validation](validation.md). Known edges and scoped future work are listed under
+    [Limitations & guarantees](limitations-and-guarantees.md). No results are fabricated.
 
 Start with [Usage](usage.md).
