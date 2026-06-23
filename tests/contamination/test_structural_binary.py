@@ -6,6 +6,13 @@ near-duplicate ``eval_close`` is generated here from ``ref1.pdb`` by a pinned,
 seeded coordinate perturbation, and the test asserts the measured TM-score lands
 in a defined band (above threshold, below 1.0) before asserting the edge — so the
 fixture cannot silently become trivial (TM~1.0) or fold-destroying (TM<threshold).
+
+Calibration guard (``test_foldseek_self_match_tm_is_calibrated``): the detector reads
+foldseek's ``qtmscore``/``ttmscore`` (a true TM-score, <= 1.0) under ``--alignment-type 1``,
+NOT the uncalibrated ``alntmscore`` (which exceeds 1.0 for strong/identical matches). A
+self-match must score ~1.0 and never above it. The original band test missed this because
+its single perturbed pair scored ~0.88 under either field, and it used only single-chain
+structures so the per-chain id-stripping bug never fired either.
 """
 
 from __future__ import annotations
@@ -92,6 +99,30 @@ def test_foldseek_golden_recovers_perturbed_fold_within_tm_band(tmp_path: Path) 
     contaminated = contaminated_eval_ids(graph)
     assert "e_close" in contaminated
     assert "e_decoy" not in contaminated
+
+
+def test_foldseek_self_match_tm_is_calibrated(tmp_path: Path) -> None:
+    # A structure vs an identical copy: a true TM-score is exactly 1.0. The uncalibrated
+    # alntmscore exceeds 1.0 here (observed up to ~1.05), so this fails unless the backend
+    # reads the calibrated qtmscore/ttmscore. Guards against a mislabeled/uncalibrated score.
+    ref1 = _STRUCTURES / "ref1.pdb"
+    copy = tmp_path / "copy.pdb"
+    copy.write_text(ref1.read_text())
+    evals = (
+        EvalItem(
+            id="e_self", sequence="MKVLA", seq_type=SeqType.PROTEIN, label=1.0, structure_path=copy
+        ),
+    )
+    refs = (
+        ReferenceItem(id="r1", sequence="MKVLA", seq_type=SeqType.PROTEIN, structure_path=ref1),
+    )
+    graph = StructuralDetector(search=FoldseekSearch()).detect(evals, refs, _config())
+    edges = [e for e in graph.edges if e.eval_id == "e_self" and e.ref_id == "r1"]
+    assert edges, "identical structures must align"
+    tm = edges[0].score
+    assert 0.99 <= tm <= 1.0, (
+        f"self-match TM {tm} is not a calibrated TM-score (must be ~1.0, <=1.0)"
+    )
 
 
 def test_foldseek_specificity_unrelated_fold_yields_no_edges() -> None:

@@ -19,8 +19,10 @@ _MMSEQS_M8 = (
     "e1\tr1\t1.000\t1.000\t1.000\t1.2E-30\t100.0\ne2\tr2\t0.850\t0.900\t0.880\t3.4E-10\t60.0\n"
 )
 
-# foldseek easy-search --format-output "query,target,alntmscore,evalue"
-_FOLDSEEK = "e1\tr1\t0.950\t1e-20\ne2\tr2\t0.300\t0.1\n"
+# foldseek easy-search --alignment-type 1 --format-output "query,target,qtmscore,ttmscore,evalue"
+# tm_score = max(qtmscore, ttmscore) -- the TM normalized by the shorter chain (standard
+# "same fold" convention; recall-oriented for an auditor). Both fields are calibrated <= 1.0.
+_FOLDSEEK = "e1\tr1\t0.950\t0.900\t1e-20\ne2\tr2\t0.250\t0.300\t0.1\n"
 
 # hmmsearch --domtblout (whitespace-separated; leading comment lines start with '#').
 # Columns: 1=target(sequence) ... 4=query(HMM/family) ... 7=full-seq E-value.
@@ -42,8 +44,8 @@ def test_parse_m8_maps_identity_and_coverage() -> None:
 def test_parse_foldseek_maps_tm_score() -> None:
     hits = parse_foldseek(_FOLDSEEK)
     assert hits == [
-        StructuralHit(eval_id="e1", ref_id="r1", tm_score=0.95),
-        StructuralHit(eval_id="e2", ref_id="r2", tm_score=0.30),
+        StructuralHit(eval_id="e1", ref_id="r1", tm_score=0.95),  # max(0.95, 0.90)
+        StructuralHit(eval_id="e2", ref_id="r2", tm_score=0.30),  # max(0.25, 0.30)
     ]
 
 

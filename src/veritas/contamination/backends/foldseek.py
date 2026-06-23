@@ -12,7 +12,10 @@ from veritas.contamination.hits import StructuralHit
 from veritas.contamination.subprocess_runner import CommandRunner, run_command
 from veritas.contracts import EvalItem, ReferenceItem
 
-_FORMAT_OUTPUT = "query,target,alntmscore,evalue"
+# Request the CALIBRATED TM-score fields (qtmscore/ttmscore, both <= 1.0), NOT alntmscore
+# (which exceeds 1.0 for strong/identical matches -- not a true TM-score). Paired with
+# --alignment-type 1 (TMalign) so the score is a real structural-superposition TM-score.
+_FORMAT_OUTPUT = "query,target,qtmscore,ttmscore,evalue"
 
 
 def parse_foldseek(text: str) -> list[StructuralHit]:
@@ -22,13 +25,27 @@ def parse_foldseek(text: str) -> list[StructuralHit]:
         if not line:
             continue
         parts = line.split("\t")
-        hits.append(StructuralHit(eval_id=parts[0], ref_id=parts[1], tm_score=float(parts[2])))
+        # tm_score = max(qtmscore, ttmscore): the TM normalized by the shorter chain (the
+        # standard "same fold" convention; recall-oriented for an auditor).
+        hits.append(
+            StructuralHit(
+                eval_id=parts[0], ref_id=parts[1], tm_score=max(float(parts[2]), float(parts[3]))
+            )
+        )
     return hits
 
 
-def _strip_structure_suffix(name: str) -> str:
-    # foldseek identifies structures by filename (e.g. "e_close.pdb" or "e_close.pdb_A").
-    return name.split(".pdb")[0]
+def _resolve_id(raw: str, known: frozenset[str]) -> str:
+    # foldseek emits one entry per chain, naming it "<id>_<chain>" (extension already removed;
+    # older builds emitted "<id>.pdb_<chain>"). Resolve back to the item id we wrote: an exact
+    # match (single-chain "<id>"), else the stem with the trailing "_<chain>" removed.
+    candidate = raw.split(".pdb")[0]
+    if candidate in known:
+        return candidate
+    stem = candidate.rsplit("_", 1)[0]
+    if stem in known:
+        return stem
+    return candidate
 
 
 class FoldseekSearch:
@@ -73,6 +90,8 @@ class FoldseekSearch:
                     str(target_dir),
                     str(out),
                     str(tmp / "foldseek_tmp"),
+                    "--alignment-type",
+                    "1",
                     "--format-output",
                     _FORMAT_OUTPUT,
                 ],
@@ -80,10 +99,12 @@ class FoldseekSearch:
                 timeout=self._timeout,
             )
             raw_hits = parse_foldseek(out.read_text())
+        eval_known = frozenset(item.id for item in eval_items)
+        ref_known = frozenset(item.id for item in reference_items)
         return [
             StructuralHit(
-                eval_id=_strip_structure_suffix(hit.eval_id),
-                ref_id=_strip_structure_suffix(hit.ref_id),
+                eval_id=_resolve_id(hit.eval_id, eval_known),
+                ref_id=_resolve_id(hit.ref_id, ref_known),
                 tm_score=hit.tm_score,
             )
             for hit in raw_hits
