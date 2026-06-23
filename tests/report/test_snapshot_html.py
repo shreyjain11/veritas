@@ -26,4 +26,5 @@ def test_html_contains_benchmark_and_metric_values() -> None:
     html = render_html(report)
     assert "demo-benchmark" in html
     # each metric's provenance ref is surfaced (provenance completeness covered in (c))
+    assert report.reported is not None
     assert report.reported.provenance_ref in html

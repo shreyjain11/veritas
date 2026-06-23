@@ -102,5 +102,6 @@ def test_steps_agree_with_the_full_run() -> None:
     )
     graph = detect(case.config, case.inputs, detector_factory=case.detector_factory)
     comparison = rescore(case.config, case.inputs, graph)
+    assert report.reported is not None and report.honest is not None
     assert report.reported.value == comparison.reported.value
     assert report.honest.value == comparison.honest.value

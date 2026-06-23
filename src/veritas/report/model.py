@@ -13,8 +13,11 @@ from typing import Any
 
 from veritas.contracts import (
     AuditReport,
+    LeakageSplit,
     LeakageSummary,
+    Limitation,
     ProvenanceRecord,
+    ReportKind,
     ResultStatus,
     StratumResult,
     TracedValue,
@@ -37,19 +40,52 @@ def _traced_payload(traced: TracedValue) -> dict[str, Any]:
     }
 
 
+def _traced_payload_opt(traced: TracedValue | None) -> dict[str, Any] | None:
+    return _traced_payload(traced) if traced is not None else None
+
+
+def _leakage_payload(leakage: LeakageSummary | None) -> dict[str, Any] | None:
+    if leakage is None:
+        return None
+    return {
+        "n_eval": leakage.n_eval,
+        "n_contaminated": leakage.n_contaminated,
+        "per_detector": leakage.per_detector,
+    }
+
+
+def _splits_payload(splits: tuple[LeakageSplit, ...]) -> list[dict[str, Any]]:
+    # rate is derived (n_flagged / n_total) and deliberately NOT hashed.
+    return [
+        {
+            "split_name": split.split_name,
+            "role": split.role.value,
+            "note": split.note,
+            "cells": [
+                {
+                    "detector": cell.detector,
+                    "n_flagged": cell.n_flagged,
+                    "n_total": cell.n_total,
+                    "threshold_label": cell.threshold_label,
+                }
+                for cell in split.cells
+            ],
+        }
+        for split in splits
+    ]
+
+
 def _hashable_content(report: AuditReport) -> dict[str, Any]:
     provenance = report.provenance
     return {
         "benchmark_name": report.benchmark_name,
+        "report_kind": report.report_kind.value,
         "status": report.status.value,
-        "reported": _traced_payload(report.reported),
-        "honest": _traced_payload(report.honest),
-        "delta": _traced_payload(report.delta),
-        "leakage": {
-            "n_eval": report.leakage.n_eval,
-            "n_contaminated": report.leakage.n_contaminated,
-            "per_detector": report.leakage.per_detector,
-        },
+        "reported": _traced_payload_opt(report.reported),
+        "honest": _traced_payload_opt(report.honest),
+        "delta": _traced_payload_opt(report.delta),
+        "leakage": _leakage_payload(report.leakage),
+        "splits": _splits_payload(report.splits),
         "provenance": {
             "input_hashes": provenance.input_hashes,
             "params": provenance.params,
@@ -110,6 +146,56 @@ def assemble_report(
         provenance=provenance,
         limitations=limitations,
         stratification=tuple(stratification),
+        created_at=created_at,
+    )
+    return draft.model_copy(update={"audit_hash": audit_hash_for(draft)})
+
+
+def assemble_detection_report(
+    *,
+    benchmark_name: str,
+    splits: Sequence[LeakageSplit],
+    provenance: ProvenanceRecord,
+    limitations: Sequence[Limitation] = (),
+    status: ResultStatus = ResultStatus.OK,
+    created_at: str | None = None,
+) -> AuditReport:
+    """Assemble a detection report (a leakage splits-matrix, no scored metric).
+
+    Limitations are passed explicitly (each demo discloses its own caveats, e.g. the
+    fold-level-not-interface-level structural note) and are hashed like everything else.
+    """
+    draft = AuditReport(
+        audit_hash=_PENDING_HASH,
+        benchmark_name=benchmark_name,
+        report_kind=ReportKind.DETECTION,
+        status=status,
+        splits=tuple(splits),
+        provenance=provenance,
+        limitations=tuple(limitations),
+        created_at=created_at,
+    )
+    return draft.model_copy(update={"audit_hash": audit_hash_for(draft)})
+
+
+def assemble_stratification_report(
+    *,
+    benchmark_name: str,
+    stratification: Sequence[StratumResult],
+    provenance: ProvenanceRecord,
+    limitations: Sequence[Limitation] = (),
+    status: ResultStatus = ResultStatus.OK,
+    created_at: str | None = None,
+) -> AuditReport:
+    """Assemble a stratification report (a performance-by-difficulty curve, no metric)."""
+    draft = AuditReport(
+        audit_hash=_PENDING_HASH,
+        benchmark_name=benchmark_name,
+        report_kind=ReportKind.STRATIFICATION,
+        status=status,
+        stratification=tuple(stratification),
+        provenance=provenance,
+        limitations=tuple(limitations),
         created_at=created_at,
     )
     return draft.model_copy(update={"audit_hash": audit_hash_for(draft)})

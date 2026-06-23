@@ -163,6 +163,7 @@ def test_overfitnn_random_split_complete_memorizer_collapse() -> None:
     shuffled = df.sample(fraction=1.0, shuffle=True, seed=_SEED)
     report = _audit(shuffled.slice(_N_TEST, _N_TRAIN), shuffled.head(_N_TEST), "random_split")
 
+    assert report.reported is not None and report.honest is not None and report.delta is not None
     reported, honest, delta = report.reported, report.honest, report.delta
     assert reported.status.value == "ok" and honest.status.value == "ok"  # status ok
     assert delta.value is not None and delta.value > 0.0  # sign: inflation
@@ -187,6 +188,7 @@ def test_overfitnn_chr_holdout_partial_residual_leakage() -> None:
         "chr8_9_holdout",
     )
 
+    assert report.reported is not None and report.honest is not None and report.delta is not None
     reported, honest, delta = report.reported, report.honest, report.delta
     assert reported.status.value == "ok" and honest.status.value == "ok"  # status ok
     assert delta.value is not None and delta.value > 0.0  # sign: inflation

@@ -43,6 +43,29 @@ class ResultStatus(StrEnum):
     UNDEFINED_METRIC = "undefined_metric"
 
 
+class ReportKind(StrEnum):
+    """What an AuditReport carries (the wire-format discriminator).
+
+    ``metric_audit`` is the reported-vs-honest audit (the metric slots are present);
+    ``detection`` carries a leakage splits-matrix and no metric (no model was scored);
+    ``stratification`` carries only a performance-by-difficulty curve. The kind is part
+    of the hashed content, and a validator forbids fabricating a metric for the
+    non-metric kinds (their reported/honest/delta must be null).
+    """
+
+    METRIC_AUDIT = "metric_audit"
+    DETECTION = "detection"
+    STRATIFICATION = "stratification"
+
+
+class SplitRole(StrEnum):
+    """The intent of a split in a detection report's matrix (drives viewer emphasis)."""
+
+    DEMONSTRATION = "demonstration"
+    CONTROL = "control"
+    FINDING = "finding"
+
+
 class Partition(StrEnum):
     TRAIN = "train"
     EVAL = "eval"

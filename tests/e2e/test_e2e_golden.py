@@ -30,6 +30,8 @@ def test_end_to_end_golden_report_matches_planted_values() -> None:
     case = make_golden_audit()
     report = _run()
     assert report.status is ResultStatus.OK
+    assert report.reported is not None and report.honest is not None and report.delta is not None
+    assert report.leakage is not None
     assert report.reported.value == pytest.approx(case.expected_reported)  # 0.8
     assert report.honest.value == pytest.approx(case.expected_honest)  # 0.6
     assert report.delta.value == pytest.approx(case.expected_delta)  # 0.2 (float subtraction)

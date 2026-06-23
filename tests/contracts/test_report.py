@@ -7,10 +7,15 @@ from pydantic import ValidationError
 
 from veritas.contracts import (
     AuditReport,
+    DetectorCell,
+    LeakageSplit,
     LeakageSummary,
     Limitation,
     ProvenanceRecord,
+    ReportKind,
     ResultStatus,
+    SplitRole,
+    StratumResult,
     TracedValue,
 )
 
@@ -177,3 +182,158 @@ def test_audit_report_accepts_and_round_trips_limitations() -> None:
 def test_audit_report_rejects_non_limitation_entries() -> None:
     with pytest.raises(ValidationError):
         _report(limitations=("not-a-limitation",))
+
+
+# --- Option B: DetectorCell + LeakageSplit (the detection splits-matrix) ------
+
+
+def _cell(detector: str = "family", flagged: int = 18, total: int = 52) -> DetectorCell:
+    return DetectorCell(
+        detector=detector, n_flagged=flagged, n_total=total, threshold_label="Pfam e<=1e-3"
+    )
+
+
+def test_detector_cell_rate_is_computed() -> None:
+    assert _cell(flagged=18, total=52).rate == pytest.approx(18 / 52)
+
+
+def test_detector_cell_zero_total_rate_is_zero() -> None:
+    assert _cell(flagged=0, total=0).rate == 0.0
+
+
+def test_detector_cell_rejects_flagged_exceeding_total() -> None:
+    with pytest.raises(ValidationError):
+        _cell(flagged=53, total=52)
+
+
+def test_detector_cell_rejects_negative_counts() -> None:
+    with pytest.raises(ValidationError):
+        DetectorCell(detector="family", n_flagged=-1, n_total=52, threshold_label="x")
+
+
+def test_detector_cell_requires_threshold_label() -> None:
+    with pytest.raises(ValidationError):
+        DetectorCell(detector="family", n_flagged=1, n_total=2, threshold_label="")
+
+
+def _split(name: str = "demonstration", role: SplitRole = SplitRole.DEMONSTRATION) -> LeakageSplit:
+    return LeakageSplit(split_name=name, role=role, cells=(_cell(),))
+
+
+def test_leakage_split_requires_at_least_one_cell() -> None:
+    with pytest.raises(ValidationError):
+        LeakageSplit(split_name="s", role=SplitRole.DEMONSTRATION, cells=())
+
+
+def test_leakage_split_requires_split_name() -> None:
+    with pytest.raises(ValidationError):
+        LeakageSplit(split_name="", role=SplitRole.CONTROL, cells=(_cell(),))
+
+
+# --- Option B: report_kind invariants (the no-fabrication validator) ----------
+
+
+def _stratum() -> StratumResult:
+    return StratumResult(
+        axis_name="metadata:MSA_Neff_L_category",
+        bucket_index=0,
+        bucket_label="Low",
+        n=15,
+        metric=TracedValue(name="spearman", value=0.298, provenance_ref="prov:low"),
+    )
+
+
+def _detection(**overrides: object) -> AuditReport:
+    fields: dict[str, object] = dict(
+        audit_hash="h",
+        benchmark_name="ppi",
+        report_kind=ReportKind.DETECTION,
+        reported=None,
+        honest=None,
+        delta=None,
+        leakage=None,
+        splits=(_split(),),
+        provenance=_prov(),
+    )
+    fields.update(overrides)
+    return AuditReport(**fields)  # type: ignore[arg-type]
+
+
+def _stratification(**overrides: object) -> AuditReport:
+    fields: dict[str, object] = dict(
+        audit_hash="h",
+        benchmark_name="proteingym",
+        report_kind=ReportKind.STRATIFICATION,
+        reported=None,
+        honest=None,
+        delta=None,
+        leakage=None,
+        stratification=(_stratum(),),
+        provenance=_prov(),
+    )
+    fields.update(overrides)
+    return AuditReport(**fields)  # type: ignore[arg-type]
+
+
+def test_default_report_kind_is_metric_audit() -> None:
+    assert _report().report_kind is ReportKind.METRIC_AUDIT
+
+
+def test_detection_report_is_valid_and_round_trips() -> None:
+    report = _detection()
+    assert report.report_kind is ReportKind.DETECTION
+    assert report.reported is None and report.leakage is None
+    assert AuditReport.model_validate_json(report.model_dump_json()) == report
+
+
+def test_stratification_report_is_valid_and_round_trips() -> None:
+    report = _stratification()
+    assert report.report_kind is ReportKind.STRATIFICATION
+    assert AuditReport.model_validate_json(report.model_dump_json()) == report
+
+
+def test_detection_report_with_a_metric_slot_is_rejected() -> None:
+    # The no-fabrication guard (explicit negative case): a non-metric kind must not
+    # carry a fabricated metric.
+    with pytest.raises(ValidationError):
+        _detection(reported=_traced(0.9))
+
+
+def test_detection_report_with_nonnull_leakage_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _detection(leakage=LeakageSummary(n_eval=1, n_contaminated=0, per_detector={}))
+
+
+def test_detection_report_requires_at_least_one_split() -> None:
+    with pytest.raises(ValidationError):
+        _detection(splits=())
+
+
+def test_stratification_report_requires_at_least_one_stratum() -> None:
+    with pytest.raises(ValidationError):
+        _stratification(stratification=())
+
+
+def test_metric_audit_report_requires_its_metric_slots() -> None:
+    with pytest.raises(ValidationError):
+        _report(reported=None)
+
+
+def test_metric_audit_report_forbids_splits() -> None:
+    with pytest.raises(ValidationError):
+        _report(splits=(_split(),))
+
+
+def test_metric_audit_report_requires_leakage() -> None:
+    with pytest.raises(ValidationError):
+        _report(leakage=None)
+
+
+def test_detection_report_forbids_stratification() -> None:
+    with pytest.raises(ValidationError):
+        _detection(stratification=(_stratum(),))
+
+
+def test_stratification_report_forbids_splits() -> None:
+    with pytest.raises(ValidationError):
+        _stratification(splits=(_split(),))

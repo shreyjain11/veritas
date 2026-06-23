@@ -22,6 +22,7 @@ def test_formatter_does_not_round() -> None:
 
 def test_same_value_is_byte_identical_in_all_three_formats() -> None:
     report = make_audit_report(reported_value=_DRIFTY)
+    assert report.reported is not None
     value = report.reported.value
     assert value is not None
     token = format_number(value)
@@ -35,6 +36,7 @@ def test_same_value_is_byte_identical_in_all_three_formats() -> None:
 
 def test_json_value_matches_the_canonical_formatting() -> None:
     report = make_audit_report(reported_value=_DRIFTY)
+    assert report.reported is not None
     value = report.reported.value
     assert value is not None
     data = json.loads(render_json(report))

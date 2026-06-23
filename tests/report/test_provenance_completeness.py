@@ -18,6 +18,7 @@ _RENDERERS = (render_json, render_markdown, render_html)
 
 def test_every_metric_number_is_accompanied_by_its_provenance_ref() -> None:
     report = make_audit_report()
+    assert report.reported is not None and report.honest is not None and report.delta is not None
     for render in _RENDERERS:
         out = render(report)
         for traced in (report.reported, report.honest, report.delta):

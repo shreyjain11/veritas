@@ -15,6 +15,19 @@ def _ci(traced: TracedValue) -> str:
 
 
 def build_context(report: AuditReport) -> dict[str, Any]:
+    # The Markdown/HTML renderers present the reported-vs-honest audit; the wire-format
+    # JSON is the renderer for detection / stratification reports.
+    reported, honest, delta, leakage = (
+        report.reported,
+        report.honest,
+        report.delta,
+        report.leakage,
+    )
+    if reported is None or honest is None or delta is None or leakage is None:
+        raise ValueError(
+            f"Markdown/HTML rendering supports metric_audit reports; "
+            f"got {report.report_kind.value} (render it as JSON instead)"
+        )
     metrics = [
         {
             "label": label,
@@ -23,9 +36,9 @@ def build_context(report: AuditReport) -> dict[str, Any]:
             "provenance_ref": traced.provenance_ref,
         }
         for label, traced in (
-            ("Reported", report.reported),
-            ("Honest", report.honest),
-            ("Delta", report.delta),
+            ("Reported", reported),
+            ("Honest", honest),
+            ("Delta", delta),
         )
     ]
     provenance = report.provenance
@@ -35,10 +48,10 @@ def build_context(report: AuditReport) -> dict[str, Any]:
         "status": report.status.value.replace("_", " "),
         "metrics": metrics,
         "leakage": {
-            "n_eval": report.leakage.n_eval,
-            "n_contaminated": report.leakage.n_contaminated,
-            "fraction": format_number(report.leakage.fraction_contaminated),
-            "per_detector": sorted(report.leakage.per_detector.items()),
+            "n_eval": leakage.n_eval,
+            "n_contaminated": leakage.n_contaminated,
+            "fraction": format_number(leakage.fraction_contaminated),
+            "per_detector": sorted(leakage.per_detector.items()),
         },
         "seed": provenance.seed,
         "pinned_versions": sorted(provenance.pinned_versions.items()),

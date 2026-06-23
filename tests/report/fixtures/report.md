@@ -1,6 +1,6 @@
 # Veritas Audit Report - demo-benchmark
 
-- **audit_hash:** `a2c8575bcfe5bed840e7304799f38d485746a32bcd744062fa5a473a4f38fc35`
+- **audit_hash:** `715cd6a5cfb4a28ba63d1b8376b09cf00153712c489c3b88d14a698752c21466`
 - **status:** ok
 
 ## Metrics

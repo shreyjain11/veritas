@@ -68,4 +68,5 @@ def test_audit_10k_within_time_ceiling() -> None:
     start = time.perf_counter()
     report = run_audit(config, AuditInputs(benchmark=benchmark, reference_items=reference_items))
     assert time.perf_counter() - start < _CEILING_SECONDS
+    assert report.leakage is not None
     assert report.leakage.n_eval == _N

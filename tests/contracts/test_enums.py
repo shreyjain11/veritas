@@ -8,8 +8,10 @@ from veritas.contracts import (
     DetectorKind,
     MetricName,
     Partition,
+    ReportKind,
     ResultStatus,
     SeqType,
+    SplitRole,
 )
 
 
@@ -44,6 +46,14 @@ def test_result_status_values() -> None:
 
 def test_partition_values() -> None:
     assert {p.value for p in Partition} == {"train", "eval", "reference"}
+
+
+def test_report_kind_values() -> None:
+    assert {k.value for k in ReportKind} == {"metric_audit", "detection", "stratification"}
+
+
+def test_split_role_values() -> None:
+    assert {r.value for r in SplitRole} == {"demonstration", "control", "finding"}
 
 
 def test_enums_round_trip_from_string() -> None:

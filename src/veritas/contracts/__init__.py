@@ -12,8 +12,10 @@ from veritas.contracts.enums import (
     DetectorKind,
     MetricName,
     Partition,
+    ReportKind,
     ResultStatus,
     SeqType,
+    SplitRole,
 )
 from veritas.contracts.eval_item import EvalItem
 from veritas.contracts.predictions import PredictionRecord, PredictionSet
@@ -21,6 +23,8 @@ from veritas.contracts.provenance import ProvenanceRecord
 from veritas.contracts.reference_item import ReferenceItem
 from veritas.contracts.report import (
     AuditReport,
+    DetectorCell,
+    LeakageSplit,
     LeakageSummary,
     Limitation,
     StratumResult,
@@ -36,9 +40,11 @@ __all__ = [
     "ContaminationEdge",
     "ContaminationGraph",
     "DeLeakPolicy",
+    "DetectorCell",
     "DetectorConfig",
     "DetectorKind",
     "EvalItem",
+    "LeakageSplit",
     "LeakageSummary",
     "Limitation",
     "MetricName",
@@ -48,8 +54,10 @@ __all__ = [
     "PredictionSet",
     "ProvenanceRecord",
     "ReferenceItem",
+    "ReportKind",
     "ResultStatus",
     "SeqType",
+    "SplitRole",
     "SplitSpec",
     "StratumResult",
     "TracedValue",

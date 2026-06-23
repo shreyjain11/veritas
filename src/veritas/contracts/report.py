@@ -13,7 +13,7 @@ from typing import Self
 from pydantic import Field, model_validator
 
 from veritas.contracts.base import FrozenModel
-from veritas.contracts.enums import ResultStatus
+from veritas.contracts.enums import ReportKind, ResultStatus, SplitRole
 from veritas.contracts.provenance import ProvenanceRecord
 
 
@@ -60,6 +60,47 @@ class Limitation(FrozenModel):
     detail: str = Field(min_length=1)
 
 
+class DetectorCell(FrozenModel):
+    """One cell of a detection splits-matrix: a detector's leakage on one split.
+
+    The cell carries the raw ``n_flagged / n_total`` count and the detector's
+    ``threshold_label`` (e.g. ``"Pfam e<=1e-3"``) so the viewer renders an anchored
+    claim, not a bare percentage. ``rate`` is derived (never stored) to avoid drift.
+    """
+
+    detector: str = Field(min_length=1)
+    n_flagged: int = Field(ge=0)
+    n_total: int = Field(ge=0)
+    threshold_label: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check_counts(self) -> Self:
+        if self.n_flagged > self.n_total:
+            raise ValueError("n_flagged must be <= n_total")
+        return self
+
+    @property
+    def rate(self) -> float:
+        if self.n_total == 0:
+            return 0.0
+        return self.n_flagged / self.n_total
+
+
+class LeakageSplit(FrozenModel):
+    """One named split (a matrix row) with its per-detector cells.
+
+    A single-split detection report (e.g. a naive genomic split) is the degenerate
+    one-row case; a multi-split report (demonstration / control / findings) renders
+    the cross-split contrast. ``role`` lets the viewer mark intent without inferring
+    it from the numbers.
+    """
+
+    split_name: str = Field(min_length=1)
+    role: SplitRole
+    cells: tuple[DetectorCell, ...] = Field(min_length=1)
+    note: str | None = None
+
+
 class StratumResult(FrozenModel):
     """One difficulty bucket's traced performance, for the silent-failure analysis.
 
@@ -79,11 +120,19 @@ class StratumResult(FrozenModel):
 class AuditReport(FrozenModel):
     audit_hash: str = Field(min_length=1)
     benchmark_name: str
+    # The wire-format discriminator; part of the hashed content (it cannot be swapped
+    # silently). Defaults to metric_audit so existing reported-vs-honest reports are
+    # unchanged.
+    report_kind: ReportKind = ReportKind.METRIC_AUDIT
     status: ResultStatus = ResultStatus.OK
-    reported: TracedValue
-    honest: TracedValue
-    delta: TracedValue
-    leakage: LeakageSummary
+    # Metric slots + top-level leakage are present ONLY for metric_audit; the validator
+    # forbids a detection/stratification report from carrying a (fabricated) metric.
+    reported: TracedValue | None = None
+    honest: TracedValue | None = None
+    delta: TracedValue | None = None
+    leakage: LeakageSummary | None = None
+    # Detection splits-matrix (one+ rows for a detection report; empty otherwise).
+    splits: tuple[LeakageSplit, ...] = ()
     provenance: ProvenanceRecord
     # Disclosed methodological caveats; additive (defaults empty) and part of the
     # hashed content (the report assembler stamps audit_hash over these too).
@@ -91,3 +140,32 @@ class AuditReport(FrozenModel):
     # Stratified robustness analysis (additive, hashed): empty when no axes are run.
     stratification: tuple[StratumResult, ...] = ()
     created_at: str | None = None
+
+    @model_validator(mode="after")
+    def _check_kind_invariants(self) -> Self:
+        metric_slots = (self.reported, self.honest, self.delta)
+        if self.report_kind is ReportKind.METRIC_AUDIT:
+            if any(slot is None for slot in metric_slots):
+                raise ValueError("a metric_audit report requires reported, honest, and delta")
+            if self.leakage is None:
+                raise ValueError("a metric_audit report requires a leakage summary")
+            if self.splits:
+                raise ValueError("a metric_audit report must not carry detection splits")
+            return self
+        # detection / stratification: no model was scored -> no fabricated metric.
+        kind = self.report_kind.value
+        if any(slot is not None for slot in metric_slots):
+            raise ValueError(f"a {kind} report must not carry a metric (reported/honest/delta)")
+        if self.leakage is not None:
+            raise ValueError(f"a {kind} report must not carry a top-level leakage summary")
+        if self.report_kind is ReportKind.DETECTION:
+            if not self.splits:
+                raise ValueError("a detection report requires at least one split")
+            if self.stratification:
+                raise ValueError("a detection report must not carry stratification")
+        else:  # STRATIFICATION
+            if not self.stratification:
+                raise ValueError("a stratification report requires at least one stratum")
+            if self.splits:
+                raise ValueError("a stratification report must not carry detection splits")
+        return self

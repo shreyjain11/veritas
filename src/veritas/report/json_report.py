@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from veritas.contracts import AuditReport, TracedValue
+from veritas.contracts import AuditReport, LeakageSplit, LeakageSummary, TracedValue
 
 
 def _traced(traced: TracedValue) -> dict[str, Any]:
@@ -21,21 +21,54 @@ def _traced(traced: TracedValue) -> dict[str, Any]:
     }
 
 
+def _traced_opt(traced: TracedValue | None) -> dict[str, Any] | None:
+    return _traced(traced) if traced is not None else None
+
+
+def _leakage(leakage: LeakageSummary | None) -> dict[str, Any] | None:
+    if leakage is None:
+        return None
+    return {
+        "n_eval": leakage.n_eval,
+        "n_contaminated": leakage.n_contaminated,
+        "fraction_contaminated": leakage.fraction_contaminated,
+        "per_detector": leakage.per_detector,
+    }
+
+
+def _splits(splits: tuple[LeakageSplit, ...]) -> list[dict[str, Any]]:
+    return [
+        {
+            "split_name": split.split_name,
+            "role": split.role.value,
+            "note": split.note,
+            "cells": [
+                {
+                    "detector": cell.detector,
+                    "n_flagged": cell.n_flagged,
+                    "n_total": cell.n_total,
+                    "rate": cell.rate,  # derived (n_flagged / n_total); excluded from the hash
+                    "threshold_label": cell.threshold_label,
+                }
+                for cell in split.cells
+            ],
+        }
+        for split in splits
+    ]
+
+
 def render_json(report: AuditReport) -> str:
     provenance = report.provenance
     payload: dict[str, Any] = {
         "audit_hash": report.audit_hash,
         "benchmark_name": report.benchmark_name,
+        "report_kind": report.report_kind.value,
         "status": report.status.value,
-        "reported": _traced(report.reported),
-        "honest": _traced(report.honest),
-        "delta": _traced(report.delta),
-        "leakage": {
-            "n_eval": report.leakage.n_eval,
-            "n_contaminated": report.leakage.n_contaminated,
-            "fraction_contaminated": report.leakage.fraction_contaminated,
-            "per_detector": report.leakage.per_detector,
-        },
+        "reported": _traced_opt(report.reported),
+        "honest": _traced_opt(report.honest),
+        "delta": _traced_opt(report.delta),
+        "leakage": _leakage(report.leakage),
+        "splits": _splits(report.splits),
         "provenance": {
             "input_hashes": provenance.input_hashes,
             "params": provenance.params,

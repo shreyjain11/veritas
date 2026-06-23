@@ -48,4 +48,5 @@ def test_regulatory_dna_nucleotide_leakage() -> None:
     )
     report = run_audit(config, AuditInputs(benchmark=benchmark, reference_items=reference))
     assert report.status is ResultStatus.OK
+    assert report.leakage is not None
     assert report.leakage.n_eval > 0
