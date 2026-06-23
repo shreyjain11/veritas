@@ -1,0 +1,17 @@
+{
+  "comment": "Type-safety GATE config: lib + test only (no Next/JSX). Used by `npm run typecheck` in CI so the gate chain does not depend on the Next toolchain.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["lib", "test"]
+}

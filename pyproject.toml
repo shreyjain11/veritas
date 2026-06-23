@@ -69,6 +69,9 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
     "scikit-learn>=1.5",
+    # validates render_json output + committed fixtures against the exported JSON Schema
+    # (the type-safety gate; pairs with the web/ ajv + TS-hash-port gates).
+    "jsonschema>=4.20",
 ]
 
 [tool.hatch.version]
@@ -112,7 +115,7 @@ warn_unused_ignores = true
 # Per-library `ignore_missing_imports` overrides for untyped third-party deps,
 # added in the phase that first imports each one (keeps mypy's unused-config check clean).
 [[tool.mypy.overrides]]
-module = ["datasketch.*", "matplotlib.*", "scipy.*", "sklearn.*"]
+module = ["datasketch.*", "matplotlib.*", "scipy.*", "sklearn.*", "jsonschema"]
 ignore_missing_imports = true
 
 # pyhmmer ships a py.typed marker but its bundled stubs have a syntax error
