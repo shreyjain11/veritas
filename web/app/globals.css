@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/*
+ * Veritas design system — dark-first, monochrome chrome, color-as-measurement.
+ * Chrome (surfaces/text/borders) is grayscale; the three data hues carry meaning ONLY:
+ *   iris   = brand / interactive / verified-honest
+ *   amber  = reported-inflated / leakage / caution
+ *   danger = tamper / mismatch / silent-failure
+ * Numbers, hashes and sequences live in mono; prose in sans.
+ */
+@theme {
+  /* surfaces (cool near-black instrument housing) */
+  --color-base: #0a0c0f;
+  --color-subtle: #0e1216;
+  --color-surface: #14181e;
+  --color-elevated: #1a1f27;
+
+  /* borders / hairlines */
+  --color-hairline: #1c222a;
+  --color-line: #2a313b;
+  --color-edge: #3a434f;
+
+  /* text */
+  --color-fg: #e8eaed;
+  --color-secondary: #9ca4ae;
+  --color-muted: #69717b;
+  --color-faint: #474e58;
+
+  /* semantic data hues (the ONLY color in the UI) */
+  --color-iris: #6e78f0;
+  --color-iris-fg: #9aa2f7;
+  --color-iris-dim: #1a1f3d;
+  --color-warn: #e0a53b;
+  --color-warn-fg: #f0c674;
+  --color-warn-dim: #33280f;
+  --color-danger: #e5484d;
+  --color-danger-fg: #ff9592;
+  --color-danger-dim: #3a1518;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--color-base);
+}
+
+body {
+  background-color: var(--color-base);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv01" 1, "cv03" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* every measured number is tabular so columns and readouts align */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* default border color (Tailwind v4 borders are currentColor unless set) */
+* {
+  border-color: var(--color-line);
+}
+
+::selection {
+  background-color: var(--color-iris-dim);
+  color: var(--color-iris-fg);
+}
+
+/* the one place we spend motion: the collapse + seal reveal. Off when asked. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

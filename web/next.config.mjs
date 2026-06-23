@@ -8,6 +8,8 @@ const nextConfig = {
   output: "export",
   reactStrictMode: true,
   images: { unoptimized: true },
+  // pin the trace root to web/ (multiple lockfiles exist on this machine).
+  outputFileTracingRoot: import.meta.dirname,
 };
 
 export default nextConfig;

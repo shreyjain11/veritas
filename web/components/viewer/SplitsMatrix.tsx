@@ -1,0 +1,113 @@
+import { Info } from "lucide-react";
+
+import type { AuditReport, DetectorCell, LeakageSplit } from "../../lib/audit-report";
+import { cn } from "../../lib/cn";
+import { fmtPct } from "../../lib/format";
+import { Eyebrow } from "../ui";
+
+// A row counts as "clean" when even its worst detector is near-zero. Clean rows recede to
+// a hairline and carry an iris verdict-edge; leaky rows read amber. Encoded redundantly:
+// fill length + the rate number + the verdict edge + the role label (never color-alone).
+const CLEAN_MAX_RATE = 0.05;
+
+function rowMaxRate(split: LeakageSplit): number {
+  return split.cells.reduce((m, c) => Math.max(m, rate(c)), 0);
+}
+
+function rate(cell: DetectorCell): number {
+  return cell.n_total > 0 ? cell.n_flagged / cell.n_total : 0;
+}
+
+function Cell({ cell }: { cell: DetectorCell }) {
+  const r = rate(cell);
+  const empty = r < 0.005;
+  return (
+    <div className="px-3 py-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className={cn("font-mono text-sm tnum", empty ? "text-muted" : "text-warn-fg")}>
+          {fmtPct(r)}
+        </span>
+        <span className="font-mono text-[0.625rem] text-faint tnum">
+          {cell.n_flagged}/{cell.n_total}
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-[2px] bg-hairline">
+        {!empty && <div className="h-full rounded-[2px] bg-warn/70" style={{ width: `${r * 100}%` }} />}
+      </div>
+    </div>
+  );
+}
+
+export function SplitsMatrix({ report }: { report: AuditReport }) {
+  const splits = report.splits ?? [];
+  if (splits.length === 0) return null;
+  const detectors = (splits[0]?.cells ?? []).map((c) => c.detector);
+  const thresholds = new Map((splits[0]?.cells ?? []).map((c) => [c.detector, c.threshold_label]));
+  const cols = `minmax(10rem,1.3fr) repeat(${detectors.length}, minmax(0, 1fr))`;
+
+  return (
+    <section className="rounded-md border border-hairline bg-surface/60 px-5 py-4">
+      <header className="mb-4 flex items-baseline justify-between gap-4">
+        <Eyebrow>leakage by split × detector</Eyebrow>
+        <span className="font-mono text-[0.6875rem] text-muted tnum">
+          {splits.length} split{splits.length > 1 ? "s" : ""}
+        </span>
+      </header>
+
+      <div className="overflow-x-auto">
+        <div className="min-w-[34rem]">
+          {/* column headers */}
+          <div className="grid items-end gap-px border-b border-line pb-2" style={{ gridTemplateColumns: cols }}>
+            <span />
+            {detectors.map((d) => (
+              <div key={d} className="px-3">
+                <div className="flex items-center gap-1 font-mono text-[0.75rem] text-secondary">
+                  {d}
+                  {d === "structural" && <Info className="size-3 text-faint" aria-label="fold-level" />}
+                </div>
+                <div className="mt-0.5 font-mono text-[0.625rem] leading-tight text-faint">
+                  {thresholds.get(d)}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* rows */}
+          {splits.map((split) => {
+            const clean = rowMaxRate(split) < CLEAN_MAX_RATE;
+            const byDet = new Map(split.cells.map((c) => [c.detector, c]));
+            return (
+              <div
+                key={split.split_name}
+                className={cn(
+                  "grid items-stretch border-b border-hairline last:border-b-0",
+                  "border-l-2",
+                  clean ? "border-l-iris/70" : "border-l-warn/60",
+                )}
+                style={{ gridTemplateColumns: cols }}
+              >
+                <div className="px-3 py-2.5">
+                  <div className="text-[0.8125rem] leading-tight text-fg">{split.split_name}</div>
+                  <div className="mt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.06em] text-faint">
+                    {split.role}
+                  </div>
+                </div>
+                {detectors.map((d) => {
+                  const cell = byDet.get(d);
+                  return cell ? <Cell key={d} cell={cell} /> : <div key={d} className="px-3 py-2.5" />;
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <p className="mt-3 text-[0.6875rem] leading-relaxed text-faint">
+        <Info className="mr-1 inline size-3 align-[-1px]" aria-hidden />
+        structural is fold-level (foldseek monomer TMalign) — a related but more permissive signal
+        than iDist&apos;s interface-level redundancy; reported as its own quantity, not directly
+        comparable. Iris edge marks a clean control row; amber marks a leaky split.
+      </p>
+    </section>
+  );
+}
