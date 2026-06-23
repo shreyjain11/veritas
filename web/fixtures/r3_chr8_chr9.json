@@ -1,0 +1,98 @@
+{
+  "audit_hash": "5373ed503216e7b9453301ca7e23186df96fe851b7d4b9fceb0320ee9f348eac",
+  "benchmark_name": "gosai_k562_overfitnn_chr8_chr9_holdout",
+  "created_at": null,
+  "delta": {
+    "ci_high": 0.079,
+    "ci_low": 0.009,
+    "name": "spearman_delta",
+    "provenance_ref": "prov:delta",
+    "status": "ok",
+    "value": 0.044
+  },
+  "honest": {
+    "ci_high": 0.056,
+    "ci_low": 0.002,
+    "name": "spearman",
+    "provenance_ref": "prov:honest",
+    "status": "ok",
+    "value": 0.03
+  },
+  "leakage": {
+    "fraction_contaminated": 0.1656,
+    "n_contaminated": 828,
+    "n_eval": 5000,
+    "per_detector": {
+      "mmseqs": 828
+    }
+  },
+  "limitations": [
+    {
+      "detail": "Confidence intervals use the percentile bootstrap, which mildly under-covers at small sample sizes: empirically about 0.927 coverage at n=25 for a nominal 95% interval, rising toward nominal as n grows. Treat intervals on small buckets or sets as optimistic.",
+      "id": "bootstrap_small_n",
+      "title": "Bootstrap confidence intervals under-cover at small n"
+    }
+  ],
+  "provenance": {
+    "input_hashes": {
+      "dataset:regulatory_dna_gosai:evaluator_data.zip": "dcdd92c42cb12cfcf9c2d60cb3e522811dfad437078693811aa0674d0da9d3e1"
+    },
+    "params": {
+      "identity_threshold": 0.8,
+      "n_test": 5000,
+      "n_train": 20000,
+      "split": "chr8_chr9_holdout"
+    },
+    "pinned_versions": {
+      "mmseqs": "18.8cc5c"
+    },
+    "runtime_versions": {
+      "mmseqs": "18.8cc5c"
+    },
+    "seed": 1729,
+    "version_mismatches": []
+  },
+  "report_kind": "metric_audit",
+  "reported": {
+    "ci_high": 0.103,
+    "ci_low": 0.046,
+    "name": "spearman",
+    "provenance_ref": "prov:reported",
+    "status": "ok",
+    "value": 0.074
+  },
+  "splits": [],
+  "status": "ok",
+  "stratification": [
+    {
+      "axis_name": "identity_to_nearest_reference",
+      "bucket_index": 0,
+      "bucket_label": "[0.0, 0.25)",
+      "is_silent_failure": false,
+      "metric": {
+        "ci_high": null,
+        "ci_low": null,
+        "name": "spearman",
+        "provenance_ref": "prov:[0.0, 0.25)",
+        "status": "ok",
+        "value": 0.03
+      },
+      "n": 4172
+    },
+    {
+      "axis_name": "identity_to_nearest_reference",
+      "bucket_index": 3,
+      "bucket_label": "[0.75, 1.0)",
+      "is_silent_failure": false,
+      "metric": {
+        "ci_high": null,
+        "ci_low": null,
+        "name": "spearman",
+        "provenance_ref": "prov:[0.75, 1.0)",
+        "status": "ok",
+        "value": 0.147
+      },
+      "n": 828
+    }
+  ]
+}

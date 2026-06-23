@@ -1,0 +1,81 @@
+{
+  "audit_hash": "eb8a7ac17996d9cd49386ea4aa345aa6b197a98f2c1b1754b4faa596d8150454",
+  "benchmark_name": "proteingym_esm1v_msa_depth",
+  "created_at": null,
+  "delta": null,
+  "honest": null,
+  "leakage": null,
+  "limitations": [
+    {
+      "detail": "The MSA-depth gradient is correlational, not causal: depth correlates with protein family / organism / assay-type, and the within-bucket spread is wide with overlapping ranges. The gradient is a shift in the mean, not clean separation of buckets.",
+      "id": "proteingym_correlational",
+      "title": "Correlational, with wide within-bucket overlap"
+    }
+  ],
+  "provenance": {
+    "input_hashes": {
+      "dataset:proteingym_dms:DMS_ProteinGym_substitutions.zip": "3a83766254ac9ac9984ec25cb73c6e010ea4418f5e35f143933e6b6e6473b921",
+      "dataset:proteingym_dms:zero_shot_substitutions_scores.zip": "3fd7cdb5e78f1d43cabfabfeb6578c252b63af23ba2ab44db0094dc3a42de36d"
+    },
+    "params": {
+      "baseline": "ESM1v_ensemble",
+      "metric": "mean_per_assay_spearman",
+      "n_per_bucket": 15
+    },
+    "pinned_versions": {},
+    "runtime_versions": {},
+    "seed": 1729,
+    "version_mismatches": []
+  },
+  "report_kind": "stratification",
+  "reported": null,
+  "splits": [],
+  "status": "ok",
+  "stratification": [
+    {
+      "axis_name": "metadata:MSA_Neff_L_category",
+      "bucket_index": 0,
+      "bucket_label": "Low",
+      "is_silent_failure": false,
+      "metric": {
+        "ci_high": null,
+        "ci_low": null,
+        "name": "spearman",
+        "provenance_ref": "prov:Low",
+        "status": "ok",
+        "value": 0.298
+      },
+      "n": 15
+    },
+    {
+      "axis_name": "metadata:MSA_Neff_L_category",
+      "bucket_index": 1,
+      "bucket_label": "Medium",
+      "is_silent_failure": false,
+      "metric": {
+        "ci_high": null,
+        "ci_low": null,
+        "name": "spearman",
+        "provenance_ref": "prov:Medium",
+        "status": "ok",
+        "value": 0.384
+      },
+      "n": 15
+    },
+    {
+      "axis_name": "metadata:MSA_Neff_L_category",
+      "bucket_index": 2,
+      "bucket_label": "High",
+      "is_silent_failure": false,
+      "metric": {
+        "ci_high": null,
+        "ci_low": null,
+        "name": "spearman",
+        "provenance_ref": "prov:High",
+        "status": "ok",
+        "value": 0.531
+      },
+      "n": 15
+    }
+  ]
+}

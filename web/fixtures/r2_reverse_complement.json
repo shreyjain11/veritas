@@ -1,0 +1,47 @@
+{
+  "audit_hash": "ca257f0b0c703c062d68082009387e02cd93d1f1614cec339583ead4067adb55",
+  "benchmark_name": "hashfrag_gosai_reverse_complement",
+  "created_at": null,
+  "delta": null,
+  "honest": null,
+  "leakage": null,
+  "limitations": [],
+  "provenance": {
+    "input_hashes": {
+      "dataset:regulatory_dna_hashfrag:example_test_split.fa": "7256a7dafabe8a63270fef8e9b05d6d0e5711b3dc34f99ee4a1ad5e537d38776",
+      "dataset:regulatory_dna_hashfrag:example_train_split.fa": "681f0fe3cad9e2adabcd774ffaf5f40927e435e5b155af9ada146b1f1d733c6e"
+    },
+    "params": {
+      "match": "exact_reverse_complement",
+      "strand_mode": "both"
+    },
+    "pinned_versions": {
+      "mmseqs": "18.8cc5c"
+    },
+    "runtime_versions": {
+      "mmseqs": "18.8cc5c"
+    },
+    "seed": 1729,
+    "version_mismatches": []
+  },
+  "report_kind": "detection",
+  "reported": null,
+  "splits": [
+    {
+      "cells": [
+        {
+          "detector": "sequence",
+          "n_flagged": 1616,
+          "n_total": 2000,
+          "rate": 0.808,
+          "threshold_label": "mmseqs both-strand, exact reverse-complement"
+        }
+      ],
+      "note": "80.8% of test sequences are exact reverse-complements of training sequences.",
+      "role": "finding",
+      "split_name": "hashFrag example naive split"
+    }
+  ],
+  "status": "ok",
+  "stratification": []
+}

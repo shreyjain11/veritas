@@ -1,0 +1,156 @@
+{
+  "audit_hash": "0ef3618182dbf69d29f3ba899e6c8ab495adac7cbb87e18f40523b2a1bef8e52",
+  "benchmark_name": "ppi_skempi_interface",
+  "created_at": null,
+  "delta": null,
+  "honest": null,
+  "leakage": null,
+  "limitations": [
+    {
+      "detail": "Veritas's structural detector reports a fold-level TM-score (foldseek monomer TMalign, max(qtmscore, ttmscore)) -- a related but more permissive signal than iDist's interface-level redundancy. The structural rates are reported as their own quantity and are not directly comparable to interface-redundancy baselines.",
+      "id": "structural_fold_level",
+      "title": "Structural detection is fold-level, not interface-level"
+    }
+  ],
+  "provenance": {
+    "input_hashes": {
+      "dataset:ppi_bushuiev:Pfam-A.hmm.gz": "2d82087b6c5c60d762cc767f98e8260b273134c215ab7efccf7440614a4e5dab",
+      "dataset:ppi_bushuiev:skempi2.zip": "f0b026d644c5afea295b8c5e8e2bfdd501d7ed72cd25c9cc3b360306ef29fde7",
+      "dataset:ppi_bushuiev:skempi_v2.csv": "76f8e60d09eaa4f05fb265063886859a86895c0b2fb225e31fe82928a883972d",
+      "dataset:ppi_bushuiev:vendored/chains.fasta": "08963f5fb73c02892a5d1e12b39795ef44ea50771453b80eecfe6f9e5033f03a"
+    },
+    "params": {
+      "split_construction": "mmseqs easy-search id>=0.30/cov>=0.50; components; seed 1729"
+    },
+    "pinned_versions": {
+      "foldseek": "10.941cd33",
+      "mmseqs": "18.8cc5c",
+      "pyhmmer": "0.12.1"
+    },
+    "runtime_versions": {
+      "foldseek": "10.941cd33",
+      "mmseqs": "18.8cc5c",
+      "pyhmmer": "0.12.1"
+    },
+    "seed": 1729,
+    "version_mismatches": []
+  },
+  "report_kind": "detection",
+  "reported": null,
+  "splits": [
+    {
+      "cells": [
+        {
+          "detector": "sequence",
+          "n_flagged": 0,
+          "n_total": 52,
+          "rate": 0.0,
+          "threshold_label": "id>=0.30, cov>=0.50"
+        },
+        {
+          "detector": "family",
+          "n_flagged": 18,
+          "n_total": 52,
+          "rate": 0.34615384615384615,
+          "threshold_label": "Pfam e<=1e-3"
+        },
+        {
+          "detector": "structural",
+          "n_flagged": 20,
+          "n_total": 52,
+          "rate": 0.38461538461538464,
+          "threshold_label": "foldseek TM>=0.50"
+        }
+      ],
+      "note": "Sequence split leaves family + fold-level structural leakage.",
+      "role": "demonstration",
+      "split_name": "demonstration (MMseqs2-30%)"
+    },
+    {
+      "cells": [
+        {
+          "detector": "sequence",
+          "n_flagged": 0,
+          "n_total": 60,
+          "rate": 0.0,
+          "threshold_label": "id>=0.30, cov>=0.50"
+        },
+        {
+          "detector": "family",
+          "n_flagged": 0,
+          "n_total": 60,
+          "rate": 0.0,
+          "threshold_label": "Pfam e<=1e-3"
+        },
+        {
+          "detector": "structural",
+          "n_flagged": 2,
+          "n_total": 60,
+          "rate": 0.03333333333333333,
+          "threshold_label": "foldseek TM>=0.50"
+        }
+      ],
+      "note": "Independent of the immune set: near-zero on all detectors.",
+      "role": "control",
+      "split_name": "Pr/PI control (published)"
+    },
+    {
+      "cells": [
+        {
+          "detector": "sequence",
+          "n_flagged": 48,
+          "n_total": 53,
+          "rate": 0.9056603773584906,
+          "threshold_label": "id>=0.30, cov>=0.50"
+        },
+        {
+          "detector": "family",
+          "n_flagged": 52,
+          "n_total": 53,
+          "rate": 0.9811320754716981,
+          "threshold_label": "Pfam e<=1e-3"
+        },
+        {
+          "detector": "structural",
+          "n_flagged": 51,
+          "n_total": 53,
+          "rate": 0.9622641509433962,
+          "threshold_label": "foldseek TM>=0.50"
+        }
+      ],
+      "note": "Shared immunoglobulin domains -> heavy leakage.",
+      "role": "finding",
+      "split_name": "AB/AG hold-out"
+    },
+    {
+      "cells": [
+        {
+          "detector": "sequence",
+          "n_flagged": 33,
+          "n_total": 38,
+          "rate": 0.868421052631579,
+          "threshold_label": "id>=0.30, cov>=0.50"
+        },
+        {
+          "detector": "family",
+          "n_flagged": 38,
+          "n_total": 38,
+          "rate": 1.0,
+          "threshold_label": "Pfam e<=1e-3"
+        },
+        {
+          "detector": "structural",
+          "n_flagged": 38,
+          "n_total": 38,
+          "rate": 1.0,
+          "threshold_label": "foldseek TM>=0.50"
+        }
+      ],
+      "note": "Shared immunoglobulin domains -> heavy leakage.",
+      "role": "finding",
+      "split_name": "TCR/pMHC hold-out"
+    }
+  ],
+  "status": "ok",
+  "stratification": []
+}
