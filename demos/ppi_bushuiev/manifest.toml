@@ -1,22 +1,66 @@
 name = "ppi_bushuiev"
-license = "PPIRef code MIT (anton-bushuiev/PPIRef); underlying SKEMPI v2.0 / DIPS / PDB data carry their own academic terms"
-redistributable = false
+license = "PPIRef code MIT (anton-bushuiev/PPIRef); SKEMPI v2.0 academic terms; PDB sequences public domain; Pfam-A CC0"
+redistributable = true
 description = """
-R1 reproduction (Bushuiev et al., arXiv:2404.10457, "Revealing data leakage in \
-protein interaction benchmarks"). FETCH-ONLY: the PPIRef analysis package is MIT, but \
-the underlying PPI benchmark data (SKEMPI v2.0, DIPS, PDB structures) are not clearly \
-redistributable, so no slice is committed. IMPORTANT REFRAME: the paper releases no \
-trained model and reports LEAKAGE RATES (iDist), not model-performance deltas -- so R1 \
-is a leakage-RATE reproduction (Veritas's detected cross-split homology fraction vs the \
-paper's reported leakage rate). No "model-training leakage" claim (no released model).
+Unified PPI leakage-DETECTION demo (no trained model is released by Bushuiev et al.,
+arXiv:2404.10457, so this is detection-only -- no reported-vs-honest metric delta). It
+demonstrates Veritas's family (Pfam/pyhmmer) and structural (foldseek) detectors on a
+sequence-similarity split of SKEMPI v2.0 interfaces (interface PDBs from PPIRef, Zenodo
+record 13208732).
+
+THREE parts, locked to the observed numbers (see docs/validation.md):
+  1. Demonstration -- MMseqs2-30% sequence split: sequence 0% (by construction), family
+     34.6%, fold-level structural 38.5% (TM>=0.5). Family + structure catch homology that
+     sequence-identity splitting misses (Bushuiev's thesis, demonstrated independently).
+  2. Pr/PI negative control (published SKEMPI Hold_out_type, independent of the immune
+     set): ~0% across all three detectors -- Veritas does not false-alarm on a clean split.
+  3. Immune-category finding: AB/AG and TCR/pMHC hold-outs leak 87-100% via shared
+     immunoglobulin domains (C1-set/V-set; Ig-fold MHC) -- category-blind splitting is
+     insufficient.
+
+METHOD CAVEAT (prominent): Veritas's structural detector measures FOLD-level homology
+(foldseek monomer TMalign, qtmscore/ttmscore), a related but MORE PERMISSIVE signal than
+iDist's INTERFACE-level redundancy -- the rates are NOT directly comparable; we corroborate
+Bushuiev's thesis qualitatively, not numerically.
+
+REDISTRIBUTABLE SLICE: only vendored/chains.fasta is committed -- the full per-chain
+RCSB/PDB sequences (PDB data is public domain), needed so the demo is reproducible without
+345 per-entry RCSB calls. The SKEMPI table, the PPIRef interface structures, and Pfam-A
+are FETCH-ONLY (pinned below; never hosted here).
 """
 slice_spec = """
-a PPI benchmark with a DECLARED train/test split (e.g. SKEMPI v2.0 under a \
-PPI-code-based split), proteins (+ optional interface PDBs), to measure the fraction of \
-test PPIs homologous to the train split
+348 SKEMPI v2.0 interfaces (PPIRef skempi2.zip interface PDBs), 921 chains. Splits are
+CONSTRUCTED deterministically: (a) MMseqs2-30% -- mmseqs easy-search exhaustive over all
+chains, an interface-pair edge iff any chain pair has identity>=0.30 AND coverage>=0.50;
+connected components; whole components assigned to test (seed 1729, ~15% -> 52 test / 296
+train). (b) Category split -- SKEMPI Hold_out_type mapped by PDB-id prefix; hold out one
+category (Pr/PI, AB/AG, or TCR/pMHC) as test vs the others as train. Detectors:
+sequence = mmseqs (id>=0.30, cov>=0.50); family = pyhmmer vs Pfam-A (e<=1e-3);
+structural = foldseek --alignment-type 1, tm = max(qtmscore, ttmscore), TM>=0.50.
 """
 
-# Analysis code / data access (UNPINNED: not downloaded here).
+# --- Fetch-only sources (pinned; never committed) ---
+
+# SKEMPI v2.0 mutation table (provides the Hold_out_type domain-expertise categories).
 [[sources]]
-url = "https://github.com/anton-bushuiev/PPIRef"
-role = "code"
+url = "https://life.bsc.es/pid/skempi2/database/download/skempi_v2.csv"
+sha256 = "76f8e60d09eaa4f05fb265063886859a86895c0b2fb225e31fe82928a883972d"
+role = "skempi_table"
+
+# PPIRef interface structures for SKEMPI v2.0 (Zenodo 13208732; 348 interface PDBs).
+[[sources]]
+url = "https://zenodo.org/records/13208732/files/skempi2.zip"
+sha256 = "f0b026d644c5afea295b8c5e8e2bfdd501d7ed72cd25c9cc3b360306ef29fde7"
+role = "interface_structures"
+
+# Pfam-A profile HMM database for the family detector (EBI current_release at fetch time;
+# pinned by hash -- the digest is the version of record).
+[[sources]]
+url = "https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz"
+sha256 = "2d82087b6c5c60d762cc767f98e8260b273134c215ab7efccf7440614a4e5dab"
+role = "pfam_hmm"
+
+# --- Committed slice (public-domain PDB sequences only) ---
+[[slice_files]]
+path = "vendored/chains.fasta"
+sha256 = "08963f5fb73c02892a5d1e12b39795ef44ea50771453b80eecfe6f9e5033f03a"
