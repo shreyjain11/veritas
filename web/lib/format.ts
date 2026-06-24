@@ -25,6 +25,14 @@ export function fmtPct(rate: number, digits = 1): string {
   return `${(rate * 100).toFixed(digits)}%`;
 }
 
+/** Leakage as an integer percentage of the reported metric: round(delta / reported * 100).
+ * The single source of truth for every "X% of the reported metric" figure (hero, proof
+ * cards, viewer) so they round identically. Returns 0 when reported is 0/absent. */
+export function leakageShare(delta: number | null | undefined, reported: number | null | undefined): number {
+  if (delta === null || delta === undefined || !reported) return 0;
+  return Math.round((delta / reported) * 100);
+}
+
 /** A short, copyable hash preview: first 10 + last 6. */
 export function shortHash(hash: string): string {
   if (hash.length <= 20) return hash;

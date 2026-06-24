@@ -1,5 +1,5 @@
 import { cn } from "../../lib/cn";
-import { fmtMetric, fmtSigned } from "../../lib/format";
+import { fmtMetric, fmtSigned, leakageShare } from "../../lib/format";
 
 interface Props {
   reported: number;
@@ -13,7 +13,7 @@ export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props
   const hero = variant === "hero";
   const max = Math.max(reported, honest) * 1.12 || 1;
   const pct = (v: number) => Math.max(0, (v / max) * 100);
-  const share = reported !== 0 ? Math.round((delta / reported) * 100) : 0;
+  const share = leakageShare(delta, reported);
 
   const barH = hero ? "h-3.5" : "h-2";
   const num = hero ? "text-3xl" : "text-base";

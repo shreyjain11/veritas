@@ -21,7 +21,7 @@ const DESCRIPTION =
   "A model-agnostic, post-hoc leakage & robustness auditor for sequence-based biological predictors. See how much reported performance survives once train/test homology is removed.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://web-dusky-seven-57.vercel.app"),
+  metadataBase: new URL("https://veritas-viewer.vercel.app"),
   title: "Veritas — leakage & robustness auditor",
   description: DESCRIPTION,
   applicationName: "Veritas",

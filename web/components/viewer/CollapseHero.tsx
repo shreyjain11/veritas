@@ -1,6 +1,6 @@
 import type { AuditReport, TracedValue } from "../../lib/audit-report";
 import { cn } from "../../lib/cn";
-import { fmtCI, fmtMetric, fmtSigned } from "../../lib/format";
+import { fmtCI, fmtMetric, fmtSigned, leakageShare } from "../../lib/format";
 import { Eyebrow, Stat, StatusPill } from "../ui";
 
 interface Scale {
@@ -69,7 +69,7 @@ export function CollapseHero({ report }: { report: AuditReport }) {
   const rv = reported.value ?? 0;
   const hv = honest.value ?? 0;
   const dv = delta.value ?? 0;
-  const share = rv !== 0 ? Math.round((dv / rv) * 100) : 0;
+  const share = leakageShare(dv, rv);
 
   const lo = Math.min(0, bound(reported, "ci_low"), bound(honest, "ci_low"));
   const hi = Math.max(bound(reported, "ci_high"), bound(honest, "ci_high"), rv);

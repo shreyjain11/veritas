@@ -81,32 +81,56 @@ function Gradient({ report }: { report: AuditReport }) {
   );
 }
 
+// A row is "clean" when even its worst detector is near-zero — same threshold the full
+// viewer matrix uses. Clean rows recede (uniform dim cells + iris edge); leaky rows read hot
+// amber. The Pr/PI published control is the clean row; the immune holdouts read leaky.
+const CLEAN_MAX_RATE = 0.05;
+
 function MiniMatrix({ report }: { report: AuditReport }) {
   const splits = report.splits ?? [];
   return (
     <div className="flex flex-col gap-1">
-      {splits.map((s) => (
-        <div key={s.split_name} className="flex items-center gap-2">
-          <span className="w-24 shrink-0 truncate font-mono text-[0.625rem] text-muted">
-            {s.split_name.split(" (")[0]}
-          </span>
-          <div className="flex flex-1 gap-1">
-            {s.cells.map((c) => {
-              const r = c.n_total ? c.n_flagged / c.n_total : 0;
-              return (
-                <div
-                  key={c.detector}
-                  className="h-4 flex-1 rounded-[2px]"
-                  title={`${c.detector} ${fmtPct(r)}`}
-                  style={{
-                    backgroundColor: r < 0.005 ? "#1c222a" : `rgba(224,165,59,${(0.3 + r * 0.55).toFixed(2)})`,
-                  }}
-                />
-              );
-            })}
+      {splits.map((s) => {
+        const rowMax = s.cells.reduce((m, c) => Math.max(m, c.n_total ? c.n_flagged / c.n_total : 0), 0);
+        const clean = rowMax < CLEAN_MAX_RATE;
+        return (
+          <div
+            key={s.split_name}
+            className={cn(
+              "flex items-center gap-2 border-l-2 pl-2",
+              clean ? "border-l-iris/70" : "border-l-warn/60",
+            )}
+          >
+            <span
+              className={cn(
+                "w-24 shrink-0 truncate font-mono text-[0.625rem]",
+                clean ? "text-iris-fg" : "text-muted",
+              )}
+            >
+              {s.split_name.split(" (")[0]}
+            </span>
+            <div className="flex flex-1 gap-1">
+              {s.cells.map((c) => {
+                const r = c.n_total ? c.n_flagged / c.n_total : 0;
+                return (
+                  <div
+                    key={c.detector}
+                    className="h-4 flex-1 rounded-[2px]"
+                    title={`${c.detector} ${fmtPct(r)}`}
+                    style={{
+                      backgroundColor: clean
+                        ? "#161a21"
+                        : r < 0.005
+                          ? "#1c222a"
+                          : `rgba(224,165,59,${(0.35 + r * 0.5).toFixed(2)})`,
+                    }}
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
