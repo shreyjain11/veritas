@@ -26,8 +26,8 @@ function useWidth(): [React.RefObject<HTMLDivElement | null>, number] {
   return [ref, width];
 }
 
-const AXIS_COLOR = "#474e58"; // --color-faint
-const GRID_COLOR = "#1c222a"; // --color-hairline
+const AXIS_COLOR = "#80889a"; // --color-faint (WCAG-AA on the panel surface)
+const GRID_COLOR = "#1c222a"; // --color-hairline (decorative gridline)
 const IRIS = "#9aa2f7";
 const DANGER = "#ff9592";
 
@@ -68,7 +68,7 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
         </span>
       </header>
 
-      <div ref={ref} className="w-full">
+      <div ref={ref} className="w-full" style={{ minHeight: height }}>
         {width > 0 && (
           <svg width={width} height={height} role="img" aria-label="stratified performance curve">
             <Group left={margin.left} top={margin.top}>

@@ -20,11 +20,11 @@
   --color-line: #2a313b;
   --color-edge: #3a434f;
 
-  /* text */
+  /* text — all four pass WCAG AA (>=4.5:1) for small text on every surface above */
   --color-fg: #e8eaed;
   --color-secondary: #9ca4ae;
-  --color-muted: #69717b;
-  --color-faint: #474e58;
+  --color-muted: #8b929c;
+  --color-faint: #80889a;
 
   /* semantic data hues (the ONLY color in the UI) */
   --color-iris: #6e78f0;

@@ -19,8 +19,9 @@ function Copyable({ value, display }: { value: string; display: string }) {
           setTimeout(() => setCopied(false), 1200);
         });
       }}
-      className="group inline-flex items-center gap-1.5 font-mono text-[0.6875rem] text-secondary transition-colors hover:text-fg tnum"
+      className="group inline-flex items-center gap-1.5 rounded-sm font-mono text-[0.6875rem] text-secondary transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris tnum"
       title={value}
+      aria-label={`Copy hash ${value}`}
     >
       <span>{display}</span>
       {copied ? (
