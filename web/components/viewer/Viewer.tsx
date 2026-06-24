@@ -1,16 +1,17 @@
 "use client";
 
 import { FileUp, TriangleAlert, X } from "lucide-react";
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import type { AuditReport } from "../../lib/audit-report";
 import { cn } from "../../lib/cn";
 import { FIXTURES } from "../../lib/fixtures";
 import { useVerify } from "../../lib/useVerify";
 import { ErrorBoundary } from "../ErrorBoundary";
+import { Footer } from "../Footer";
 import { StatusPill } from "../ui";
 import { CollapseHero } from "./CollapseHero";
-import { Footer } from "./Footer";
 import { HashSeal, HashSealChip } from "./HashSeal";
 import { LeakageMeter } from "./LeakageMeter";
 import { Limitations } from "./Limitations";
@@ -41,6 +42,15 @@ export function Viewer() {
   const [error, setError] = useState<string | null>(null);
 
   const verify = useVerify(active.report);
+
+  // Deep-link: /report?report=<specimen-id> selects that fixture on load (used by the
+  // landing's result cards). Runs once on mount; unknown ids fall back to the default.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("report");
+    if (!id) return;
+    const fx = FIXTURES.find((f) => f.id === id);
+    if (fx) setActive({ report: fx.report, label: fx.label, id: fx.id });
+  }, []);
 
   async function ingest(raw: string, label: string) {
     let parsed: unknown;
@@ -91,7 +101,12 @@ export function Viewer() {
       {/* Mobile bar */}
       <div className="sticky top-0 z-10 border-b border-line bg-base/90 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-sm font-semibold text-fg">veritas</span>
+          <Link
+            href="/"
+            className="rounded-sm font-mono text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
+          >
+            veritas
+          </Link>
           <HashSealChip state={verify} />
           <label className="ml-auto flex items-center gap-1.5 text-[0.75rem] text-secondary">
             <span className="sr-only">Choose a specimen</span>
@@ -116,7 +131,15 @@ export function Viewer() {
         {/* Desktop rail */}
         <aside className="hidden px-5 py-6 lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-y-auto lg:border-r lg:border-line">
           <div className="mb-5">
-            <h1 className="font-mono text-sm font-semibold tracking-tight text-fg">veritas</h1>
+            <Link
+              href="/"
+              className="group inline-flex items-center gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
+            >
+              <span className="font-mono text-sm font-semibold tracking-tight text-fg">veritas</span>
+              <span className="text-[0.6875rem] text-faint transition-colors group-hover:text-muted">
+                ↗ overview
+              </span>
+            </Link>
             <p className="mt-1 text-[0.75rem] leading-snug text-muted">leakage &amp; robustness audit viewer</p>
           </div>
 
