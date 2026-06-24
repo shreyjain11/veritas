@@ -8,7 +8,7 @@ import { scaleLinear, scalePoint } from "@visx/scale";
 import { useEffect, useRef, useState } from "react";
 
 import type { AuditReport, StratumResult } from "../../lib/audit-report";
-import { fmtMetric } from "../../lib/format";
+import { fmtCI, fmtMetric } from "../../lib/format";
 import { Eyebrow } from "../ui";
 
 function useWidth(): [React.RefObject<HTMLDivElement | null>, number] {
@@ -60,7 +60,7 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
   const hasCI = strata.some((s) => s.metric.ci_low != null && s.metric.ci_high != null);
 
   return (
-    <section className="rounded-md border border-hairline bg-surface/60 px-5 py-4">
+    <section className="border-t border-hairline pt-5">
       <header className="mb-1 flex items-baseline justify-between gap-4">
         <Eyebrow>performance by {cleanAxis(strata[0]?.axis_name ?? "")}</Eyebrow>
         <span className="font-mono text-[0.6875rem] text-muted tnum">
@@ -163,6 +163,33 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
           </svg>
         )}
       </div>
+
+      {/* Accessible mirror of the SVG: screen readers read the points as a data table. */}
+      <table className="sr-only">
+        <caption>
+          {strata[0]?.metric.name} performance by {cleanAxis(strata[0]?.axis_name ?? "")}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{cleanAxis(strata[0]?.axis_name ?? "bucket")}</th>
+            <th scope="col">{strata[0]?.metric.name ?? "metric"}</th>
+            <th scope="col">95% CI</th>
+            <th scope="col">n</th>
+            <th scope="col">note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {strata.map((s) => (
+            <tr key={s.bucket_index}>
+              <th scope="row">{s.bucket_label}</th>
+              <td>{fmtMetric(s.metric.value)}</td>
+              <td>{fmtCI(s.metric.ci_low, s.metric.ci_high) || "—"}</td>
+              <td>{s.n}</td>
+              <td>{s.is_silent_failure ? "silent failure" : "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

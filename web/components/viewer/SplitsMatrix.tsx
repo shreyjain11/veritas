@@ -46,7 +46,7 @@ export function SplitsMatrix({ report }: { report: AuditReport }) {
   const cols = `minmax(10rem,1.3fr) repeat(${detectors.length}, minmax(0, 1fr))`;
 
   return (
-    <section className="rounded-md border border-hairline bg-surface/60 px-5 py-4">
+    <section className="border-t border-hairline pt-5">
       <header className="mb-4 flex items-baseline justify-between gap-4">
         <Eyebrow>leakage by split × detector</Eyebrow>
         <span className="font-mono text-[0.6875rem] text-muted tnum">

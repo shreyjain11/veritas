@@ -1,9 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
 import { cn } from "../../lib/cn";
-import { fmtMetric, fmtSigned } from "../../lib/format";
+import { fmtMetric, fmtSigned, leakageShare } from "../../lib/format";
 
 interface Props {
   reported: number;
@@ -12,18 +8,12 @@ interface Props {
   variant?: "hero" | "card";
 }
 
-/** The reported→honest collapse, animated once on mount (reduced-motion → final state). */
+/** The reported→honest collapse — a static readout (no animation). */
 export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props) {
-  const [animate, setAnimate] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setAnimate(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
   const hero = variant === "hero";
   const max = Math.max(reported, honest) * 1.12 || 1;
   const pct = (v: number) => Math.max(0, (v / max) * 100);
-  const share = reported !== 0 ? Math.round((delta / reported) * 100) : 0;
+  const share = leakageShare(delta, reported);
 
   const barH = hero ? "h-3.5" : "h-2";
   const num = hero ? "text-3xl" : "text-base";
@@ -31,16 +21,11 @@ export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props
 
   const Bar = ({ label, tone, value }: { label: string; tone: "warn" | "iris"; value: number }) => (
     <div className={cn("grid items-center gap-3", hero ? "grid-cols-[4.5rem_1fr_auto]" : "grid-cols-[3.5rem_1fr_auto]")}>
-      <span className={cn("font-mono", lbl, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>
-        {label}
-      </span>
+      <span className={cn("font-mono", lbl, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>{label}</span>
       <div className={cn("overflow-hidden rounded-sm bg-hairline", barH)}>
         <div
-          className={cn(
-            "h-full rounded-sm transition-[width] duration-700 ease-out motion-reduce:transition-none",
-            tone === "warn" ? "bg-warn/70" : "bg-iris/70",
-          )}
-          style={{ width: animate ? `${pct(value)}%` : "0%" }}
+          className={cn("h-full rounded-sm", tone === "warn" ? "bg-warn/70" : "bg-iris/70")}
+          style={{ width: `${pct(value)}%` }}
         />
       </div>
       <span className={cn("text-right font-mono tnum", num, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>

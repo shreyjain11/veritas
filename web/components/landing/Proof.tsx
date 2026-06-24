@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import type { AuditReport } from "../../lib/audit-report";
 import { cn } from "../../lib/cn";
@@ -15,33 +16,25 @@ const KIND_LABEL: Record<string, string> = {
   stratification: "stratification",
 };
 
-function ResultCard({
-  id,
-  featured,
-  children,
-}: {
-  id: string;
-  featured?: boolean;
-  children: React.ReactNode;
-}) {
+function ResultCard({ id, featured, children }: { id: string; featured?: boolean; children: ReactNode }) {
   const fx = byId(id);
   return (
     <Link
       href={`/report?report=${id}`}
       className={cn(
-        "group flex flex-col rounded-lg border border-hairline bg-surface/40 p-5 transition-colors hover:border-line hover:bg-surface/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
+        "group flex flex-col border-t border-hairline pt-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
         featured && "sm:col-span-2",
       )}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-[0.9375rem] text-fg">{fx.label}</h3>
+        <h3 className="text-[0.9375rem] text-fg transition-colors group-hover:text-iris-fg">{fx.label}</h3>
         <span className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-faint">
           {KIND_LABEL[fx.report.report_kind ?? "metric_audit"]}
         </span>
       </div>
       <div className="mt-4">{children}</div>
-      <p className="mt-4 text-[0.8125rem] leading-relaxed text-secondary">{fx.finding}</p>
-      <span className="mt-3 font-mono text-[0.75rem] text-iris-fg transition-colors group-hover:text-iris">
+      <p className="mt-4 text-pretty text-[0.8125rem] leading-relaxed text-secondary">{fx.finding}</p>
+      <span className="mt-3 font-mono text-[0.75rem] text-iris-fg transition-transform group-hover:translate-x-0.5">
         Open audit →
       </span>
     </Link>
@@ -80,10 +73,7 @@ function Gradient({ report }: { report: AuditReport }) {
       {strata.map((s) => (
         <div key={s.bucket_index} className="flex flex-1 flex-col items-center gap-1.5">
           <span className="font-mono text-[0.75rem] text-iris-fg tnum">{fmtMetric(s.metric.value)}</span>
-          <div
-            className="w-full rounded-sm bg-iris/55"
-            style={{ height: `${((s.metric.value ?? 0) / max) * 70}px` }}
-          />
+          <div className="w-full rounded-sm bg-iris/55" style={{ height: `${((s.metric.value ?? 0) / max) * 70}px` }} />
           <span className="font-mono text-[0.625rem] text-muted">{s.bucket_label}</span>
         </div>
       ))}
@@ -91,32 +81,56 @@ function Gradient({ report }: { report: AuditReport }) {
   );
 }
 
+// A row is "clean" when even its worst detector is near-zero — same threshold the full
+// viewer matrix uses. Clean rows recede (uniform dim cells + iris edge); leaky rows read hot
+// amber. The Pr/PI published control is the clean row; the immune holdouts read leaky.
+const CLEAN_MAX_RATE = 0.05;
+
 function MiniMatrix({ report }: { report: AuditReport }) {
   const splits = report.splits ?? [];
   return (
     <div className="flex flex-col gap-1">
-      {splits.map((s) => (
-        <div key={s.split_name} className="flex items-center gap-2">
-          <span className="w-24 shrink-0 truncate font-mono text-[0.625rem] text-muted">
-            {s.split_name.split(" (")[0]}
-          </span>
-          <div className="flex flex-1 gap-1">
-            {s.cells.map((c) => {
-              const r = c.n_total ? c.n_flagged / c.n_total : 0;
-              return (
-                <div
-                  key={c.detector}
-                  className="h-4 flex-1 rounded-[2px]"
-                  title={`${c.detector} ${fmtPct(r)}`}
-                  style={{
-                    backgroundColor: r < 0.005 ? "#1c222a" : `rgba(224,165,59,${(0.3 + r * 0.55).toFixed(2)})`,
-                  }}
-                />
-              );
-            })}
+      {splits.map((s) => {
+        const rowMax = s.cells.reduce((m, c) => Math.max(m, c.n_total ? c.n_flagged / c.n_total : 0), 0);
+        const clean = rowMax < CLEAN_MAX_RATE;
+        return (
+          <div
+            key={s.split_name}
+            className={cn(
+              "flex items-center gap-2 border-l-2 pl-2",
+              clean ? "border-l-iris/70" : "border-l-warn/60",
+            )}
+          >
+            <span
+              className={cn(
+                "w-24 shrink-0 truncate font-mono text-[0.625rem]",
+                clean ? "text-iris-fg" : "text-muted",
+              )}
+            >
+              {s.split_name.split(" (")[0]}
+            </span>
+            <div className="flex flex-1 gap-1">
+              {s.cells.map((c) => {
+                const r = c.n_total ? c.n_flagged / c.n_total : 0;
+                return (
+                  <div
+                    key={c.detector}
+                    className="h-4 flex-1 rounded-[2px]"
+                    title={`${c.detector} ${fmtPct(r)}`}
+                    style={{
+                      backgroundColor: clean
+                        ? "#161a21"
+                        : r < 0.005
+                          ? "#1c222a"
+                          : `rgba(224,165,59,${(0.35 + r * 0.5).toFixed(2)})`,
+                    }}
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -125,7 +139,7 @@ export function Proof() {
   return (
     <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-8">
       <Eyebrow>five real audits · no fabricated numbers</Eyebrow>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <div className="mt-8 grid gap-x-10 gap-y-7 sm:grid-cols-2">
         <ResultCard id="r3_random" featured>
           <CollapseViz {...collapse(byId("r3_random").report)} variant="card" />
         </ResultCard>

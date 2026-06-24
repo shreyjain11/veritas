@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const LINK =
   "rounded-sm text-iris-fg underline-offset-4 transition-colors hover:text-iris hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris";
 
@@ -12,15 +14,15 @@ export function HonestNote() {
           prior work qualitatively, not numerically.
         </p>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[0.8125rem]">
-          <a href="https://shreyjain11.github.io/veritas/validation/" target="_blank" rel="noreferrer" className={LINK}>
+          <Link href="/docs#results" className={LINK}>
             Validation
-          </a>
+          </Link>
           <a href="https://github.com/shreyjain11/veritas" target="_blank" rel="noreferrer" className={LINK}>
             GitHub
           </a>
-          <a href="https://shreyjain11.github.io/veritas/" target="_blank" rel="noreferrer" className={LINK}>
+          <Link href="/docs" className={LINK}>
             Docs
-          </a>
+          </Link>
         </div>
       </div>
     </section>

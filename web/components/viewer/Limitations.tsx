@@ -6,7 +6,7 @@ export function Limitations({ report }: { report: AuditReport }) {
   if (limitations.length === 0) return null;
 
   return (
-    <section className="rounded-md border border-hairline bg-surface/60 px-5 py-4">
+    <section className="border-t border-hairline pt-5">
       <header className="mb-3 flex items-baseline justify-between gap-4">
         <Eyebrow>disclosed limitations</Eyebrow>
         <span className="text-[0.625rem] text-faint">part of the hashed content</span>

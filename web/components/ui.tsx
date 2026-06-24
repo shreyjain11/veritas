@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "../lib/cn";
 
-/** A bordered surface section. Header carries an eyebrow label + optional right-aligned aside. */
+/** A section separated by a top hairline rule. Header carries an eyebrow label + optional aside. */
 export function Panel({
   eyebrow,
   aside,
@@ -17,8 +17,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        "rounded-md border border-hairline bg-surface/60",
-        "px-5 py-4",
+        "border-t border-hairline pt-5",
         className,
       )}
     >
