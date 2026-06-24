@@ -1,0 +1,446 @@
+{
+  "$defs": {
+    "DetectorCell": {
+      "additionalProperties": false,
+      "description": "One cell of a detection splits-matrix: a detector's leakage on one split.\n\nThe cell carries the raw ``n_flagged / n_total`` count and the detector's\n``threshold_label`` (e.g. ``\"Pfam e<=1e-3\"``) so the viewer renders an anchored\nclaim, not a bare percentage. ``rate`` is derived (never stored) to avoid drift.",
+      "properties": {
+        "detector": {
+          "minLength": 1,
+          "title": "Detector",
+          "type": "string"
+        },
+        "n_flagged": {
+          "minimum": 0,
+          "title": "N Flagged",
+          "type": "integer"
+        },
+        "n_total": {
+          "minimum": 0,
+          "title": "N Total",
+          "type": "integer"
+        },
+        "rate": {
+          "type": "number"
+        },
+        "threshold_label": {
+          "minLength": 1,
+          "title": "Threshold Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "detector",
+        "n_flagged",
+        "n_total",
+        "rate",
+        "threshold_label"
+      ],
+      "title": "DetectorCell",
+      "type": "object"
+    },
+    "LeakageSplit": {
+      "additionalProperties": false,
+      "description": "One named split (a matrix row) with its per-detector cells.\n\nA single-split detection report (e.g. a naive genomic split) is the degenerate\none-row case; a multi-split report (demonstration / control / findings) renders\nthe cross-split contrast. ``role`` lets the viewer mark intent without inferring\nit from the numbers.",
+      "properties": {
+        "cells": {
+          "items": {
+            "$ref": "#/$defs/DetectorCell"
+          },
+          "minItems": 1,
+          "title": "Cells",
+          "type": "array"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "role": {
+          "$ref": "#/$defs/SplitRole"
+        },
+        "split_name": {
+          "minLength": 1,
+          "title": "Split Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "split_name",
+        "role",
+        "cells"
+      ],
+      "title": "LeakageSplit",
+      "type": "object"
+    },
+    "LeakageSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "fraction_contaminated": {
+          "type": "number"
+        },
+        "n_contaminated": {
+          "minimum": 0,
+          "title": "N Contaminated",
+          "type": "integer"
+        },
+        "n_eval": {
+          "minimum": 0,
+          "title": "N Eval",
+          "type": "integer"
+        },
+        "per_detector": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Per Detector",
+          "type": "object"
+        }
+      },
+      "required": [
+        "fraction_contaminated",
+        "n_contaminated",
+        "n_eval"
+      ],
+      "title": "LeakageSummary",
+      "type": "object"
+    },
+    "Limitation": {
+      "additionalProperties": false,
+      "description": "A disclosed methodological caveat (e.g. bootstrap small-n under-coverage).\n\nLimitations are part of the report's hashed content: dropping or changing one\nchanges the ``audit_hash`` (assembled in ``veritas.report``).",
+      "properties": {
+        "detail": {
+          "minLength": 1,
+          "title": "Detail",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "detail"
+      ],
+      "title": "Limitation",
+      "type": "object"
+    },
+    "ProvenanceRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "input_hashes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Input Hashes",
+          "type": "object"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        },
+        "pinned_versions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Pinned Versions",
+          "type": "object"
+        },
+        "runtime_versions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Runtime Versions",
+          "type": "object"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "version_mismatches": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "input_hashes",
+        "params",
+        "pinned_versions",
+        "seed",
+        "version_mismatches"
+      ],
+      "title": "ProvenanceRecord",
+      "type": "object"
+    },
+    "ReportKind": {
+      "description": "What an AuditReport carries (the wire-format discriminator).\n\n``metric_audit`` is the reported-vs-honest audit (the metric slots are present);\n``detection`` carries a leakage splits-matrix and no metric (no model was scored);\n``stratification`` carries only a performance-by-difficulty curve. The kind is part\nof the hashed content, and a validator forbids fabricating a metric for the\nnon-metric kinds (their reported/honest/delta must be null).",
+      "enum": [
+        "metric_audit",
+        "detection",
+        "stratification"
+      ],
+      "title": "ReportKind",
+      "type": "string"
+    },
+    "ResultStatus": {
+      "enum": [
+        "ok",
+        "insufficient_clean_data",
+        "undefined_metric"
+      ],
+      "title": "ResultStatus",
+      "type": "string"
+    },
+    "SplitRole": {
+      "description": "The intent of a split in a detection report's matrix (drives viewer emphasis).",
+      "enum": [
+        "demonstration",
+        "control",
+        "finding"
+      ],
+      "title": "SplitRole",
+      "type": "string"
+    },
+    "StratumResult": {
+      "additionalProperties": false,
+      "description": "One difficulty bucket's traced performance, for the silent-failure analysis.\n\nThe per-bucket metric is a TracedValue (so stratification numbers are stamped\nexactly like the headline metrics), and the whole tuple is part of the report's\nhashed content.",
+      "properties": {
+        "axis_name": {
+          "title": "Axis Name",
+          "type": "string"
+        },
+        "bucket_index": {
+          "minimum": 0,
+          "title": "Bucket Index",
+          "type": "integer"
+        },
+        "bucket_label": {
+          "title": "Bucket Label",
+          "type": "string"
+        },
+        "is_silent_failure": {
+          "default": false,
+          "title": "Is Silent Failure",
+          "type": "boolean"
+        },
+        "metric": {
+          "$ref": "#/$defs/TracedValue"
+        },
+        "n": {
+          "minimum": 0,
+          "title": "N",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "axis_name",
+        "bucket_index",
+        "bucket_label",
+        "n",
+        "metric"
+      ],
+      "title": "StratumResult",
+      "type": "object"
+    },
+    "TracedValue": {
+      "additionalProperties": false,
+      "properties": {
+        "ci_high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ci High"
+        },
+        "ci_low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ci Low"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "minLength": 1,
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ResultStatus",
+          "default": "ok"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "provenance_ref"
+      ],
+      "title": "TracedValue",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audit_hash": {
+      "minLength": 1,
+      "title": "Audit Hash",
+      "type": "string"
+    },
+    "benchmark_name": {
+      "title": "Benchmark Name",
+      "type": "string"
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Created At"
+    },
+    "delta": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TracedValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "honest": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TracedValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "leakage": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LeakageSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "limitations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Limitation"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/ProvenanceRecord"
+    },
+    "report_kind": {
+      "$ref": "#/$defs/ReportKind",
+      "default": "metric_audit"
+    },
+    "reported": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TracedValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "splits": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/LeakageSplit"
+      },
+      "title": "Splits",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/ResultStatus",
+      "default": "ok"
+    },
+    "stratification": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StratumResult"
+      },
+      "title": "Stratification",
+      "type": "array"
+    }
+  },
+  "required": [
+    "audit_hash",
+    "benchmark_name",
+    "provenance"
+  ],
+  "title": "AuditReport",
+  "type": "object"
+}

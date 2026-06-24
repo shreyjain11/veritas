@@ -48,11 +48,20 @@ def build_schema() -> dict[str, Any]:
     return schema
 
 
+_WEB_COPY = _OUT.parents[1] / "web" / "lib" / "report-schema.json"
+
+
 def main() -> None:
-    _OUT.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(build_schema(), indent=2, sort_keys=True) + "\n"
+    _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(text, encoding="utf-8")
     print(f"wrote {_OUT.relative_to(_OUT.parents[1])}")
+    # A web-bundled copy so the viewer can validate ingested reports with ajv (the build
+    # cannot import files outside web/). Kept byte-identical to the canonical schema; the
+    # CI drift gate regenerates both and fails on any diff.
+    _WEB_COPY.parent.mkdir(parents=True, exist_ok=True)
+    _WEB_COPY.write_text(text, encoding="utf-8")
+    print(f"wrote {_WEB_COPY.relative_to(_OUT.parents[1])}")
 
 
 if __name__ == "__main__":
