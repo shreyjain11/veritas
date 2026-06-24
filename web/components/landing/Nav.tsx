@@ -5,7 +5,7 @@ const LINK =
 
 export function Nav() {
   return (
-    <header className="sticky top-0 z-10 border-b border-hairline bg-base/85 backdrop-blur">
+    <header className="sticky top-0 z-20 bg-base/80 backdrop-blur">
       <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-5 py-3.5 sm:px-8">
         <Link
           href="/"
@@ -22,9 +22,9 @@ export function Nav() {
           <Link href="/report" className={LINK}>
             Report viewer
           </Link>
-          <a href="https://shreyjain11.github.io/veritas/" target="_blank" rel="noreferrer" className={LINK}>
+          <Link href="/docs" className={LINK}>
             Docs
-          </a>
+          </Link>
           <a href="https://github.com/shreyjain11/veritas" target="_blank" rel="noreferrer" className={LINK}>
             GitHub
           </a>

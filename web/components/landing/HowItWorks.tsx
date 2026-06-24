@@ -1,3 +1,4 @@
+import { Reveal } from "../Reveal";
 import { Eyebrow } from "../ui";
 
 function Step({ n, title, body }: { n: string; title: string; body: string }) {
@@ -21,6 +22,7 @@ function Commit({ label, body }: { label: string; body: string }) {
 
 export function HowItWorks() {
   return (
+    <Reveal>
     <section id="how" className="mx-auto max-w-[1100px] scroll-mt-16 px-5 py-14 sm:px-8">
       <Eyebrow>how it works</Eyebrow>
       <p className="mt-3 max-w-2xl text-[0.9375rem] leading-relaxed text-secondary">
@@ -53,5 +55,6 @@ export function HowItWorks() {
         <Commit label="tamper-evident" body="re-verify the audit_hash yourself, in the browser" />
       </div>
     </section>
+    </Reveal>
   );
 }

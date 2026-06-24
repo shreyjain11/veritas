@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { cn } from "../../lib/cn";
 import { fmtMetric, fmtSigned } from "../../lib/format";
+import { useCountUp } from "../../lib/useCountUp";
 
 interface Props {
   reported: number;
@@ -21,6 +22,9 @@ export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props
   }, []);
 
   const hero = variant === "hero";
+  const dur = hero ? 900 : 0;
+  const reportedShown = useCountUp(reported, dur);
+  const honestShown = useCountUp(honest, dur);
   const max = Math.max(reported, honest) * 1.12 || 1;
   const pct = (v: number) => Math.max(0, (v / max) * 100);
   const share = reported !== 0 ? Math.round((delta / reported) * 100) : 0;
@@ -29,7 +33,17 @@ export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props
   const num = hero ? "text-3xl" : "text-base";
   const lbl = hero ? "text-[0.8125rem]" : "text-[0.625rem]";
 
-  const Bar = ({ label, tone, value }: { label: string; tone: "warn" | "iris"; value: number }) => (
+  const Bar = ({
+    label,
+    tone,
+    value,
+    display,
+  }: {
+    label: string;
+    tone: "warn" | "iris";
+    value: number;
+    display: number;
+  }) => (
     <div className={cn("grid items-center gap-3", hero ? "grid-cols-[4.5rem_1fr_auto]" : "grid-cols-[3.5rem_1fr_auto]")}>
       <span className={cn("font-mono", lbl, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>
         {label}
@@ -44,15 +58,15 @@ export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props
         />
       </div>
       <span className={cn("text-right font-mono tnum", num, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>
-        {fmtMetric(value)}
+        {fmtMetric(display)}
       </span>
     </div>
   );
 
   return (
     <div className={cn("flex flex-col", hero ? "gap-3" : "gap-2")}>
-      <Bar label="reported" tone="warn" value={reported} />
-      <Bar label="honest" tone="iris" value={honest} />
+      <Bar label="reported" tone="warn" value={reported} display={reportedShown} />
+      <Bar label="honest" tone="iris" value={honest} display={honestShown} />
       <p className={cn("font-mono text-muted", hero ? "text-[0.8125rem]" : "text-[0.625rem]")}>
         leakage <span className="text-warn-fg">Δ {fmtSigned(delta)}</span> · {share}% of the reported
         metric

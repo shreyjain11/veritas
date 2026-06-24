@@ -15,11 +15,11 @@ export function Footer() {
         <Link href="/report" className={LINK}>
           Report viewer
         </Link>
+        <Link href="/docs" className={LINK}>
+          Docs
+        </Link>
         <a href="https://github.com/shreyjain11/veritas" target="_blank" rel="noreferrer" className={LINK}>
           GitHub
-        </a>
-        <a href="https://shreyjain11.github.io/veritas/" target="_blank" rel="noreferrer" className={LINK}>
-          Docs
         </a>
       </nav>
     </footer>
