@@ -1,79 +1,82 @@
-"use client";
-
 import { CircleCheck, Loader, ShieldAlert } from "lucide-react";
-import { useEffect, useState } from "react";
 
-import type { AuditReport } from "../../lib/audit-report";
 import { cn } from "../../lib/cn";
-import { verifyAuditHash, type VerifyResult } from "../../lib/verify";
+import type { VerifyState } from "../../lib/useVerify";
 
-type SealState =
-  | { status: "verifying" }
-  | { status: "verified"; result: VerifyResult }
-  | { status: "mismatch"; result?: VerifyResult };
+const LABEL: Record<VerifyState["status"], string> = {
+  verifying: "verifying…",
+  verified: "audit_hash verified",
+  mismatch: "audit_hash mismatch",
+};
 
-/** Re-computes the audit_hash in the browser and shows a tamper-evident seal. */
-export function HashSeal({ report }: { report: AuditReport }) {
-  const [state, setState] = useState<SealState>({ status: "verifying" });
+function Icon({ status }: { status: VerifyState["status"] }) {
+  if (status === "verifying") return <Loader className="size-3.5 animate-spin text-muted" aria-hidden />;
+  if (status === "verified") return <CircleCheck className="size-3.5 text-iris-fg" aria-hidden />;
+  return <ShieldAlert className="size-3.5 text-danger-fg" aria-hidden />;
+}
 
-  useEffect(() => {
-    let active = true;
-    setState({ status: "verifying" });
-    verifyAuditHash(report)
-      .then((result) => {
-        if (!active) return;
-        setState({ status: result.ok ? "verified" : "mismatch", result });
-      })
-      .catch(() => active && setState({ status: "mismatch" }));
-    return () => {
-      active = false;
-    };
-  }, [report]);
-
-  const verified = state.status === "verified";
-  const verifying = state.status === "verifying";
-
+/** Full seal for the desktop rail. */
+export function HashSeal({ auditHash, state }: { auditHash: string; state: VerifyState }) {
+  const { status, result } = state;
   return (
     <div
       className={cn(
         "rounded-md border px-3 py-2.5 transition-colors",
-        verifying && "border-line bg-elevated",
-        verified && "border-iris/40 bg-iris-dim",
-        state.status === "mismatch" && "border-danger/50 bg-danger-dim",
+        status === "verifying" && "border-line bg-elevated",
+        status === "verified" && "border-iris/40 bg-iris-dim",
+        status === "mismatch" && "border-danger/50 bg-danger-dim",
       )}
+      role="status"
+      aria-live="polite"
     >
       <div className="flex items-center gap-2">
-        {verifying && <Loader className="size-3.5 animate-spin text-muted" aria-hidden />}
-        {verified && <CircleCheck className="size-3.5 text-iris-fg" aria-hidden />}
-        {state.status === "mismatch" && (
-          <ShieldAlert className="size-3.5 text-danger-fg" aria-hidden />
-        )}
+        <Icon status={status} />
         <span
           className={cn(
             "font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em]",
-            verifying && "text-muted",
-            verified && "text-iris-fg",
-            state.status === "mismatch" && "text-danger-fg",
+            status === "verifying" && "text-muted",
+            status === "verified" && "text-iris-fg",
+            status === "mismatch" && "text-danger-fg",
           )}
         >
-          {verifying ? "verifying…" : verified ? "audit_hash verified" : "audit_hash mismatch"}
+          {LABEL[status]}
         </span>
       </div>
       <p className="mt-1.5 break-all font-mono text-[0.625rem] leading-relaxed text-secondary tnum">
-        {report.audit_hash}
+        {auditHash}
       </p>
-      {state.status === "mismatch" && state.result && (
+      {status === "mismatch" && result && (
         <p className="mt-1 break-all font-mono text-[0.625rem] leading-relaxed text-danger-fg tnum">
-          recomputed {state.result.computed}
+          recomputed {result.computed}
         </p>
       )}
       <p className="mt-1.5 text-[0.625rem] leading-snug text-faint">
-        {verified
+        {status === "verified"
           ? "SHA-256 recomputed in-browser from canonical content."
-          : verifying
+          : status === "verifying"
             ? "recomputing SHA-256 from the report content…"
             : "the stored hash does not match the content — treat as tampered."}
       </p>
     </div>
+  );
+}
+
+/** Compact seal chip for the mobile bar. */
+export function HashSealChip({ state }: { state: VerifyState }) {
+  const { status } = state;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.625rem] uppercase tracking-[0.06em]",
+        status === "verifying" && "border-line bg-elevated text-muted",
+        status === "verified" && "border-iris/40 bg-iris-dim text-iris-fg",
+        status === "mismatch" && "border-danger/50 bg-danger-dim text-danger-fg",
+      )}
+      role="status"
+      aria-live="polite"
+    >
+      <Icon status={status} />
+      {status === "verifying" ? "verifying" : status === "verified" ? "verified" : "mismatch"}
+    </span>
   );
 }
