@@ -32,11 +32,17 @@ function Copyable({ value, display }: { value: string; display: string }) {
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function KVRow({ label, children }: { label: string; children: React.ReactNode }) {
+  // Both columns can shrink (minmax(0,…)) so a long key truncates and a long value wraps —
+  // neither can overflow into the other.
   return (
-    <div className="grid grid-cols-[8rem_1fr] items-baseline gap-3 border-b border-hairline py-1.5 last:border-b-0">
-      <span className="font-mono text-[0.6875rem] text-muted">{label}</span>
-      <div className="min-w-0">{children}</div>
+    <div className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] items-baseline gap-3 border-b border-hairline py-1.5 last:border-b-0">
+      <span className="truncate font-mono text-[0.6875rem] text-muted" title={label}>
+        {label}
+      </span>
+      <div className="min-w-0 break-words font-mono text-[0.6875rem] text-secondary tnum">
+        {children}
+      </div>
     </div>
   );
 }
@@ -52,16 +58,29 @@ export function ProvenanceReadout({ report }: { report: AuditReport }) {
 
   return (
     <Panel eyebrow="provenance" aside={<span className="font-mono text-[0.6875rem] text-muted tnum">seed {p.seed}</span>}>
+      {inputHashes.length > 0 && (
+        <div className="mb-3 flex flex-col gap-2 border-b border-hairline pb-3">
+          <Eyebrow>input hashes</Eyebrow>
+          {inputHashes.map(([key, hash]) => (
+            <div key={key} className="flex items-baseline justify-between gap-4">
+              <span
+                className="min-w-0 truncate font-mono text-[0.625rem] text-muted"
+                title={key}
+              >
+                {key.replace(/^dataset:/, "")}
+              </span>
+              <span className="shrink-0">
+                <Copyable value={hash} display={shortHash(hash)} />
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex flex-col">
-        {inputHashes.map(([key, hash]) => (
-          <Row key={key} label={key.replace(/^dataset:/, "")}>
-            <Copyable value={hash} display={shortHash(hash)} />
-          </Row>
-        ))}
         {params.map(([key, value]) => (
-          <Row key={key} label={key}>
-            <span className="font-mono text-[0.6875rem] text-secondary tnum">{String(value)}</span>
-          </Row>
+          <KVRow key={key} label={key}>
+            {String(value)}
+          </KVRow>
         ))}
       </div>
 

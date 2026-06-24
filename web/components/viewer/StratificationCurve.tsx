@@ -119,7 +119,7 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
                     {flagged && (
                       <text
                         x={cx}
-                        y={cy + 20}
+                        y={cy - 26}
                         textAnchor="middle"
                         fontFamily="var(--font-mono)"
                         fontSize={9}

@@ -9,6 +9,10 @@ export function LeakageMeter({ report }: { report: AuditReport }) {
     leakage.fraction_contaminated ??
     (leakage.n_eval ? leakage.n_contaminated / leakage.n_eval : 0);
   const detectors = Object.entries(leakage.per_detector ?? {});
+  // Anchor the per-detector claim with the threshold the run used (from provenance.params).
+  const params = report.provenance.params as Record<string, unknown> | undefined;
+  const identity = params?.["identity_threshold"];
+  const thresholdLabel = typeof identity === "number" ? `identity ≥ ${identity.toFixed(2)}` : null;
 
   return (
     <Panel
@@ -27,11 +31,15 @@ export function LeakageMeter({ report }: { report: AuditReport }) {
         <div className="h-full rounded-sm bg-warn/70" style={{ width: `${frac * 100}%` }} />
       </div>
       {detectors.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5">
+        <div className="mt-4 flex flex-col gap-1.5">
           {detectors.map(([name, count]) => (
-            <span key={name} className="font-mono text-[0.75rem] text-secondary tnum">
-              <span className="text-muted">{name}</span> {count}
-            </span>
+            <div key={name} className="font-mono text-[0.75rem] text-secondary tnum">
+              <span className="text-fg">{name}</span> flagged{" "}
+              <span className="text-warn-fg">
+                {count}/{leakage.n_eval}
+              </span>
+              {thresholdLabel && <span className="text-muted"> · {thresholdLabel}</span>}
+            </div>
           ))}
         </div>
       )}
