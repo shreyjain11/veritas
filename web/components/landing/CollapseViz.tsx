@@ -1,10 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
 import { cn } from "../../lib/cn";
 import { fmtMetric, fmtSigned } from "../../lib/format";
-import { useCountUp } from "../../lib/useCountUp";
 
 interface Props {
   reported: number;
@@ -13,18 +8,9 @@ interface Props {
   variant?: "hero" | "card";
 }
 
-/** The reported→honest collapse, animated once on mount (reduced-motion → final state). */
+/** The reported→honest collapse — a static readout (no animation). */
 export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props) {
-  const [animate, setAnimate] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setAnimate(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
   const hero = variant === "hero";
-  const dur = hero ? 900 : 0;
-  const reportedShown = useCountUp(reported, dur);
-  const honestShown = useCountUp(honest, dur);
   const max = Math.max(reported, honest) * 1.12 || 1;
   const pct = (v: number) => Math.max(0, (v / max) * 100);
   const share = reported !== 0 ? Math.round((delta / reported) * 100) : 0;
@@ -33,40 +19,25 @@ export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props
   const num = hero ? "text-3xl" : "text-base";
   const lbl = hero ? "text-[0.8125rem]" : "text-[0.625rem]";
 
-  const Bar = ({
-    label,
-    tone,
-    value,
-    display,
-  }: {
-    label: string;
-    tone: "warn" | "iris";
-    value: number;
-    display: number;
-  }) => (
+  const Bar = ({ label, tone, value }: { label: string; tone: "warn" | "iris"; value: number }) => (
     <div className={cn("grid items-center gap-3", hero ? "grid-cols-[4.5rem_1fr_auto]" : "grid-cols-[3.5rem_1fr_auto]")}>
-      <span className={cn("font-mono", lbl, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>
-        {label}
-      </span>
+      <span className={cn("font-mono", lbl, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>{label}</span>
       <div className={cn("overflow-hidden rounded-sm bg-hairline", barH)}>
         <div
-          className={cn(
-            "h-full rounded-sm transition-[width] duration-700 ease-out motion-reduce:transition-none",
-            tone === "warn" ? "bg-warn/70" : "bg-iris/70",
-          )}
-          style={{ width: animate ? `${pct(value)}%` : "0%" }}
+          className={cn("h-full rounded-sm", tone === "warn" ? "bg-warn/70" : "bg-iris/70")}
+          style={{ width: `${pct(value)}%` }}
         />
       </div>
       <span className={cn("text-right font-mono tnum", num, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>
-        {fmtMetric(display)}
+        {fmtMetric(value)}
       </span>
     </div>
   );
 
   return (
     <div className={cn("flex flex-col", hero ? "gap-3" : "gap-2")}>
-      <Bar label="reported" tone="warn" value={reported} display={reportedShown} />
-      <Bar label="honest" tone="iris" value={honest} display={honestShown} />
+      <Bar label="reported" tone="warn" value={reported} />
+      <Bar label="honest" tone="iris" value={honest} />
       <p className={cn("font-mono text-muted", hero ? "text-[0.8125rem]" : "text-[0.625rem]")}>
         leakage <span className="text-warn-fg">Δ {fmtSigned(delta)}</span> · {share}% of the reported
         metric

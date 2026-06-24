@@ -60,7 +60,7 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
   const hasCI = strata.some((s) => s.metric.ci_low != null && s.metric.ci_high != null);
 
   return (
-    <section className="rounded-md border border-hairline bg-surface/60 px-5 py-4">
+    <section className="border-t border-hairline pt-5">
       <header className="mb-1 flex items-baseline justify-between gap-4">
         <Eyebrow>performance by {cleanAxis(strata[0]?.axis_name ?? "")}</Eyebrow>
         <span className="font-mono text-[0.6875rem] text-muted tnum">

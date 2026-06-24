@@ -129,7 +129,7 @@ export function Viewer() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr]">
         {/* Desktop rail */}
-        <aside className="hidden px-5 py-6 lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-y-auto lg:border-r lg:border-line">
+        <aside className="hidden px-5 py-6 lg:sticky lg:top-0 lg:block lg:h-dvh lg:overflow-y-auto lg:border-r lg:border-line">
           <div className="mb-5">
             <Link
               href="/"

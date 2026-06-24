@@ -52,15 +52,15 @@ function Demo({ id, title, body }: { id: string; title: string; body: ReactNode 
   return (
     <Link
       href={`/report?report=${id}`}
-      className="group block rounded-md border border-hairline bg-surface/40 px-4 py-3 transition-colors hover:border-iris/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
+      className="group block border-t border-hairline pt-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[0.875rem] text-fg">{title}</span>
+        <span className="text-[0.875rem] text-fg transition-colors group-hover:text-iris-fg">{title}</span>
         <span className="font-mono text-[0.6875rem] text-iris-fg transition-transform group-hover:translate-x-0.5">
           open →
         </span>
       </div>
-      <p className="mt-1 text-[0.8125rem] leading-relaxed text-secondary">{body}</p>
+      <p className="mt-1 text-pretty text-[0.8125rem] leading-relaxed text-secondary">{body}</p>
     </Link>
   );
 }

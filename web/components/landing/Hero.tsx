@@ -11,31 +11,18 @@ export function Hero() {
   const delta = r3.delta?.value ?? 0.147;
 
   return (
-    <section className="relative overflow-hidden">
-      {/* faint instrument grid — static, monochrome, masked to fade (no glow/orb) */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #1c222a 1px, transparent 1px), linear-gradient(to bottom, #1c222a 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-          opacity: 0.5,
-          maskImage: "radial-gradient(ellipse 70% 60% at 30% 0%, black, transparent)",
-          WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 30% 0%, black, transparent)",
-        }}
-      />
-      <div className="relative mx-auto max-w-[1100px] px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20">
+    <section>
+      <div className="mx-auto max-w-[1100px] px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20">
       <Eyebrow>leakage &amp; robustness auditor</Eyebrow>
-      <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-[1.12] tracking-tight text-fg sm:text-5xl">
+      <h1 className="mt-4 max-w-3xl text-balance text-[2rem] font-semibold leading-[1.12] tracking-tight text-fg sm:text-5xl">
         ML models report inflated performance because their benchmarks leak.
       </h1>
-      <p className="mt-5 max-w-2xl text-[0.9375rem] leading-relaxed text-secondary sm:text-lg">
+      <p className="mt-5 max-w-2xl text-pretty text-[0.9375rem] leading-relaxed text-secondary sm:text-lg">
         Veritas measures how much survives once train/test homology is removed — model-agnostic,
         provenance-stamped, reproducible. It never runs your model.
       </p>
 
-      <div className="mt-10 max-w-2xl rounded-lg border border-hairline bg-surface/50 px-6 py-6">
+      <div className="mt-10 max-w-2xl border-y border-hairline py-6">
         <CollapseViz reported={reported} honest={honest} delta={delta} variant="hero" />
         <Link
           href="/report?report=r3_random"

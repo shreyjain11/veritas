@@ -1,13 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import type { MouseEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import type { AuditReport } from "../../lib/audit-report";
 import { cn } from "../../lib/cn";
 import { FIXTURES } from "../../lib/fixtures";
 import { fmtMetric, fmtPct } from "../../lib/format";
-import { Reveal } from "../Reveal";
 import { Eyebrow } from "../ui";
 import { CollapseViz } from "./CollapseViz";
 
@@ -21,42 +18,25 @@ const KIND_LABEL: Record<string, string> = {
 
 function ResultCard({ id, featured, children }: { id: string; featured?: boolean; children: ReactNode }) {
   const fx = byId(id);
-  const onMove = (e: MouseEvent<HTMLAnchorElement>) => {
-    const el = e.currentTarget;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    el.style.setProperty("--my", `${e.clientY - r.top}px`);
-  };
   return (
     <Link
       href={`/report?report=${id}`}
-      onMouseMove={onMove}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg border border-hairline bg-surface/40 p-5 transition-colors hover:border-iris/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
+        "group flex flex-col border-t border-hairline pt-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
         featured && "sm:col-span-2",
       )}
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background:
-            "radial-gradient(420px circle at var(--mx) var(--my), rgba(110,120,240,0.09), transparent 60%)",
-        }}
-        aria-hidden
-      />
-      <div className="relative flex flex-1 flex-col">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="text-[0.9375rem] text-fg">{fx.label}</h3>
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-faint">
-            {KIND_LABEL[fx.report.report_kind ?? "metric_audit"]}
-          </span>
-        </div>
-        <div className="mt-4">{children}</div>
-        <p className="mt-4 text-[0.8125rem] leading-relaxed text-secondary">{fx.finding}</p>
-        <span className="mt-3 font-mono text-[0.75rem] text-iris-fg transition-transform group-hover:translate-x-0.5">
-          Open audit →
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-[0.9375rem] text-fg transition-colors group-hover:text-iris-fg">{fx.label}</h3>
+        <span className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-faint">
+          {KIND_LABEL[fx.report.report_kind ?? "metric_audit"]}
         </span>
       </div>
+      <div className="mt-4">{children}</div>
+      <p className="mt-4 text-pretty text-[0.8125rem] leading-relaxed text-secondary">{fx.finding}</p>
+      <span className="mt-3 font-mono text-[0.75rem] text-iris-fg transition-transform group-hover:translate-x-0.5">
+        Open audit →
+      </span>
     </Link>
   );
 }
@@ -133,27 +113,25 @@ function MiniMatrix({ report }: { report: AuditReport }) {
 
 export function Proof() {
   return (
-    <Reveal>
-      <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-8">
-        <Eyebrow>five real audits · no fabricated numbers</Eyebrow>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <ResultCard id="r3_random" featured>
-            <CollapseViz {...collapse(byId("r3_random").report)} variant="card" />
-          </ResultCard>
-          <ResultCard id="r3_chr8_chr9">
-            <CollapseViz {...collapse(byId("r3_chr8_chr9").report)} variant="card" />
-          </ResultCard>
-          <ResultCard id="r2_reverse_complement">
-            <Meter report={byId("r2_reverse_complement").report} />
-          </ResultCard>
-          <ResultCard id="proteingym_msa_depth">
-            <Gradient report={byId("proteingym_msa_depth").report} />
-          </ResultCard>
-          <ResultCard id="ppi_interface">
-            <MiniMatrix report={byId("ppi_interface").report} />
-          </ResultCard>
-        </div>
-      </section>
-    </Reveal>
+    <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-8">
+      <Eyebrow>five real audits · no fabricated numbers</Eyebrow>
+      <div className="mt-8 grid gap-x-10 gap-y-7 sm:grid-cols-2">
+        <ResultCard id="r3_random" featured>
+          <CollapseViz {...collapse(byId("r3_random").report)} variant="card" />
+        </ResultCard>
+        <ResultCard id="r3_chr8_chr9">
+          <CollapseViz {...collapse(byId("r3_chr8_chr9").report)} variant="card" />
+        </ResultCard>
+        <ResultCard id="r2_reverse_complement">
+          <Meter report={byId("r2_reverse_complement").report} />
+        </ResultCard>
+        <ResultCard id="proteingym_msa_depth">
+          <Gradient report={byId("proteingym_msa_depth").report} />
+        </ResultCard>
+        <ResultCard id="ppi_interface">
+          <MiniMatrix report={byId("ppi_interface").report} />
+        </ResultCard>
+      </div>
+    </section>
   );
 }
