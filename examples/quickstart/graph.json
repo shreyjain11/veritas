@@ -1,0 +1,6 @@
+{
+  "edges": [
+    {"eval_id": "c1", "ref_id": "r1", "score": 1.0, "kind": "sequence", "detector_id": "precomputed"},
+    {"eval_id": "c2", "ref_id": "r2", "score": 1.0, "kind": "sequence", "detector_id": "precomputed"}
+  ]
+}

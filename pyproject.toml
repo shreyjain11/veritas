@@ -80,6 +80,23 @@ path = "src/veritas/__init__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/veritas"]
 
+# The sdist otherwise defaults to the whole working tree (sweeping in web/node_modules,
+# the static site, and .claude/ — a 93 MB tarball). Confine it to publishable sources so
+# PyPI gets a lean, reproducible source build. The wheel is unaffected (src/veritas only).
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/veritas",
+    "examples/quickstart",
+    "environment.yml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "pyproject.toml",
+]
+# hatchling auto-globs every README.md/LICENSE in the tree; without this it would still
+# sweep the ~276 license/readme files under web/node_modules. Exclude the non-Python trees.
+exclude = ["web", ".claude", "site", "dist", "tests", "demos", "scripts", ".github"]
+
 # ----------------------------------------------------------------------------
 # Linting / formatting
 # ----------------------------------------------------------------------------

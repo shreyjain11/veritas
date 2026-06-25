@@ -1,6 +1,31 @@
 # Usage
 
-## Install
+Two supported install paths. Use **Docker** to have the detector binaries handled
+for you on any OS; use **pip** if you already manage MMseqs2 / HMMER / Foldseek.
+
+## Install — Docker (binaries baked in, any OS)
+
+The image bakes in the version-pinned detectors (mmseqs2, diamond, foldseek,
+hmmer — see `environment.yml`) plus the CLI, so it runs anywhere Docker does with
+no conda/bioconda setup on the host:
+
+```bash
+docker build -t veritas-audit .
+docker run --rm veritas-audit --help
+
+# audit your own data: mount the directory, write the report back into it
+docker run --rm -v "$PWD:/work" veritas-audit audit \
+  --sequences /work/eval.fasta --table /work/table.csv \
+  --reference /work/reference.fasta --config /work/config.json \
+  --metric accuracy --out /work/report.json
+```
+
+The baked binaries are pinned to the same versions recorded in the report's
+provenance, so results reproduce across machines. The image is built for
+`linux/amd64` (it runs under emulation on Apple Silicon). A ready-to-run
+quickstart is bundled at `/opt/veritas/examples/quickstart` inside the image.
+
+## Install — pip (you provide the binaries)
 
 ```bash
 pip install "veritas-audit[cli]"
@@ -8,12 +33,14 @@ pip install "veritas-audit[cli]"
 
 The core package is dependency-light. The `cli` extra adds the `veritas`
 command; the `mcp` extra exposes the auditor as an MCP server; the `docs` extra
-builds this site.
+builds this site. Plain `pip install veritas-audit` installs the library only.
 
 Detection backends (MMseqs2, HMMER, Foldseek) are external binaries. Install the
-ones you need and put them on `PATH`, or point Veritas at a specific binary with
-`VERITAS_MMSEQS_BIN` / `VERITAS_HMMER_BIN` / `VERITAS_FOLDSEEK_BIN`. The
-resolved absolute path is recorded in the report's provenance.
+pinned versions with `micromamba create -f environment.yml` (then
+`source scripts/setup-binaries.sh`), or install your own and point Veritas at a
+specific binary with `VERITAS_MMSEQS_BIN` / `VERITAS_HMMER_BIN` /
+`VERITAS_FOLDSEEK_BIN`. The resolved absolute path and version are recorded in the
+report's provenance.
 
 ## Inputs
 

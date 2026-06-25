@@ -1,0 +1,56 @@
+name: docker image (self-test)
+
+# Builds the portable, batteries-included image and runs a FULL audit end-to-end
+# inside it — on native amd64 runners, which have the AVX2 the baked detector
+# binaries (mmseqs2/foldseek/diamond/hmmer) require. This is the platform where
+# `docker run veritas-audit audit ...` exercises live detection; locally on Apple
+# Silicon the detectors can only run under emulation (no AVX2), so this job is the
+# authoritative end-to-end check for the container path.
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - environment.yml
+      - examples/quickstart/**
+
+jobs:
+  image-self-test:
+    name: build image + run a full audit inside it
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t veritas-audit:ci .
+
+      - name: CLI runs in-container
+        run: docker run --rm veritas-audit:ci --help
+
+      - name: Full audit end-to-end in-container (live mmseqs detection)
+        run: |
+          mkdir -p out && chmod 777 out
+          docker run --rm -v "$PWD/out:/work" veritas-audit:ci audit \
+            --sequences /opt/veritas/examples/quickstart/eval.fasta \
+            --table /opt/veritas/examples/quickstart/table.csv \
+            --reference /opt/veritas/examples/quickstart/reference.fasta \
+            --config /opt/veritas/examples/quickstart/config.json \
+            --metric accuracy --out /work/report.json
+
+      - name: Assert the reported -> honest collapse + leakage
+        run: |
+          python3 - <<'PY'
+          import json
+          r = json.load(open("out/report.json"))
+          assert r["status"] == "ok", r["status"]
+          assert abs(r["reported"]["value"] - 0.75) < 1e-9, r["reported"]
+          assert abs(r["honest"]["value"] - 0.5) < 1e-9, r["honest"]
+          assert r["leakage"]["n_contaminated"] == 2, r["leakage"]
+          assert r["audit_hash"], "missing audit_hash"
+          print("docker full-audit OK:", r["reported"]["value"], "->", r["honest"]["value"],
+                "| contaminated", r["leakage"]["n_contaminated"], "/", r["leakage"]["n_eval"])
+          PY
+
+      - name: Leakage gate passes
+        run: docker run --rm -v "$PWD/out:/work" veritas-audit:ci gate --report /work/report.json --max-delta 0.5
