@@ -38,4 +38,4 @@ site/
 .vscode/
 
 # Claude Code local (machine-specific permission allowlist; rules/ are tracked)
-.claude/settings.local.json
+.claude/
