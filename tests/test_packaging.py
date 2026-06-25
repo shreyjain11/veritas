@@ -23,8 +23,10 @@ def _pyproject() -> dict[str, Any]:
     return tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
 
 
-def test_distribution_name_is_veritas_audit() -> None:
-    assert _pyproject()["project"]["name"] == "veritas-audit"
+def test_distribution_name_is_veritas_leakage() -> None:
+    # `veritas-audit` is taken on PyPI by an unrelated LLM-hallucination tool, so the
+    # distribution publishes as `veritas-leakage` (the import + CLI stay `veritas`).
+    assert _pyproject()["project"]["name"] == "veritas-leakage"
 
 
 def test_version_is_released_semver_and_matches_package() -> None:

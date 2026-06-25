@@ -4,7 +4,7 @@
 #
 # Bakes in the version-pinned contamination-detector binaries (mmseqs2, diamond,
 # foldseek, hmmer) at the SAME pins as environment.yml / the provenance contract,
-# plus Python 3.12 and the `veritas` CLI. The result: `docker run veritas-audit
+# plus Python 3.12 and the `veritas` CLI. The result: `docker run veritas-leakage
 # audit ...` runs the full pipeline on any machine with Docker, regardless of OS,
 # with no conda/bioconda setup on the host.
 #
@@ -12,13 +12,13 @@
 # and the platform the determinism gate is pinned to (so the baked binaries match
 # the provenance versions byte-for-byte). On Apple Silicon it runs under emulation.
 #
-#   docker build -t veritas-audit .
-#   docker run --rm veritas-audit --help
-#   docker run --rm -v "$PWD:/work" veritas-audit audit --sequences ... --out /work/report.json
+#   docker build -t veritas-leakage .
+#   docker run --rm veritas-leakage --help
+#   docker run --rm -v "$PWD:/work" veritas-leakage audit --sequences ... --out /work/report.json
 
 FROM --platform=linux/amd64 mambaorg/micromamba:1.5.10
 
-LABEL org.opencontainers.image.title="veritas-audit" \
+LABEL org.opencontainers.image.title="veritas-leakage" \
       org.opencontainers.image.source="https://github.com/shreyjain11/veritas" \
       org.opencontainers.image.description="Post-hoc leakage & robustness auditor with pinned detector binaries baked in."
 

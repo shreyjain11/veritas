@@ -20,7 +20,7 @@ detection, the reported-vs-honest metric on the de-leaked set, and a stratified
 ## Install
 
 ```bash
-pip install "veritas-audit[cli]"
+pip install "veritas-leakage[cli]"
 ```
 
 The core package is dependency-light and importable without the optional layers;

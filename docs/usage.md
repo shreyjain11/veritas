@@ -11,17 +11,17 @@ no conda/bioconda setup on the host:
 
 ```bash
 # pull the published image — no build needed
-docker pull ghcr.io/shreyjain11/veritas-audit:latest
-docker run --rm ghcr.io/shreyjain11/veritas-audit --help
+docker pull ghcr.io/shreyjain11/veritas-leakage:latest
+docker run --rm ghcr.io/shreyjain11/veritas-leakage --help
 
 # audit your own data: mount the directory, write the report back into it
-docker run --rm -v "$PWD:/work" ghcr.io/shreyjain11/veritas-audit audit \
+docker run --rm -v "$PWD:/work" ghcr.io/shreyjain11/veritas-leakage audit \
   --sequences /work/eval.fasta --table /work/table.csv \
   --reference /work/reference.fasta --config /work/config.json \
   --metric accuracy --out /work/report.json
 
 # …or build it yourself from a checkout
-docker build -t veritas-audit .
+docker build -t veritas-leakage .
 ```
 
 The baked binaries are pinned to the same versions recorded in the report's
@@ -32,12 +32,12 @@ quickstart is bundled at `/opt/veritas/examples/quickstart` inside the image.
 ## Install — pip (you provide the binaries)
 
 ```bash
-pip install "veritas-audit[cli]"
+pip install "veritas-leakage[cli]"
 ```
 
 The core package is dependency-light. The `cli` extra adds the `veritas`
 command; the `mcp` extra exposes the auditor as an MCP server; the `docs` extra
-builds this site. Plain `pip install veritas-audit` installs the library only.
+builds this site. Plain `pip install veritas-leakage` installs the library only.
 
 Detection backends (MMseqs2, HMMER, Foldseek) are external binaries. Install the
 pinned versions with `micromamba create -f environment.yml` (then
