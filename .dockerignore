@@ -1,0 +1,16 @@
+# Keep the build context tiny (the repo root holds web/node_modules, the static
+# site, datasets, and .venv). Allowlist only what the image build needs.
+*
+!/src
+!/examples
+!/pyproject.toml
+!/README.md
+!/LICENSE
+!/CHANGELOG.md
+!/environment.yml
+
+# Even within the allowlisted trees, never ship caches/artifacts.
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache

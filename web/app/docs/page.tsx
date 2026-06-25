@@ -219,14 +219,24 @@ export default function DocsPage() {
 
             <H2 id="usage">Using Veritas</H2>
             <P>
-              Veritas is a dependency-light Python package. The detectors shell out to version-pinned
-              binaries (MMseqs2, Foldseek, HMMER) installed via conda/micromamba.
+              Two install paths. <strong className="text-fg">Docker</strong> bakes in the
+              version-pinned detector binaries (MMseqs2, Diamond, Foldseek, HMMER) plus the CLI, so it
+              runs on any OS with no conda setup — the binaries match the versions stamped into the
+              report&apos;s provenance:
+            </P>
+            <Code>{`docker pull ghcr.io/shreyjain11/veritas-audit:latest
+docker run --rm -v "$PWD:/work" ghcr.io/shreyjain11/veritas-audit audit \\
+  --sequences /work/eval.fasta --table /work/table.csv \\
+  --reference /work/reference.fasta --config /work/config.json \\
+  --metric accuracy --out /work/report.json
+# …or build it yourself: docker build -t veritas-audit .`}</Code>
+            <P>
+              Or install from PyPI with the <C>cli</C> extra and bring your own detector binaries
+              (pinned in <C>environment.yml</C>):
             </P>
             <Code>{`pip install "veritas-audit[cli]"
-veritas --help              # CLI
-# or, in Python:
-from veritas.audit import run_audit
-report = run_audit(config, inputs, detector_factory=..., version_runner=...)`}</Code>
+veritas audit --sequences eval.fasta --table table.csv \\
+  --reference reference.fasta --config config.json --metric accuracy --out report.json`}</Code>
             <P>
               Full usage, the dataset manifests, and the reproducible demos live on{" "}
               <a
