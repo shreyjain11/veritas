@@ -224,11 +224,12 @@ export default function DocsPage() {
               runs on any OS with no conda setup — the binaries match the versions stamped into the
               report&apos;s provenance:
             </P>
-            <Code>{`docker build -t veritas-audit .
-docker run --rm -v "$PWD:/work" veritas-audit audit \\
+            <Code>{`docker pull ghcr.io/shreyjain11/veritas-audit:latest
+docker run --rm -v "$PWD:/work" ghcr.io/shreyjain11/veritas-audit audit \\
   --sequences /work/eval.fasta --table /work/table.csv \\
   --reference /work/reference.fasta --config /work/config.json \\
-  --metric accuracy --out /work/report.json`}</Code>
+  --metric accuracy --out /work/report.json
+# …or build it yourself: docker build -t veritas-audit .`}</Code>
             <P>
               Or install from PyPI with the <C>cli</C> extra and bring your own detector binaries
               (pinned in <C>environment.yml</C>):

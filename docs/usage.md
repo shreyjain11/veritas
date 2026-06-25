@@ -10,14 +10,18 @@ hmmer — see `environment.yml`) plus the CLI, so it runs anywhere Docker does w
 no conda/bioconda setup on the host:
 
 ```bash
-docker build -t veritas-audit .
-docker run --rm veritas-audit --help
+# pull the published image — no build needed
+docker pull ghcr.io/shreyjain11/veritas-audit:latest
+docker run --rm ghcr.io/shreyjain11/veritas-audit --help
 
 # audit your own data: mount the directory, write the report back into it
-docker run --rm -v "$PWD:/work" veritas-audit audit \
+docker run --rm -v "$PWD:/work" ghcr.io/shreyjain11/veritas-audit audit \
   --sequences /work/eval.fasta --table /work/table.csv \
   --reference /work/reference.fasta --config /work/config.json \
   --metric accuracy --out /work/report.json
+
+# …or build it yourself from a checkout
+docker build -t veritas-audit .
 ```
 
 The baked binaries are pinned to the same versions recorded in the report's
