@@ -16,7 +16,7 @@
   installed wheel — this is what makes the "core imports without cli/mcp" rule
   (SPEC §3 hard rule) and the clean-checkout gate testable.
 - **Packaging:** `hatchling`, deps managed by `uv`, lockfile committed. Import/
-  repo name is `veritas`; PyPI distribution name (e.g. `veritas-audit`) is chosen
+  repo name is `veritas`; PyPI distribution name (e.g. `veritas-leakage`) is chosen
   and availability-checked at Phase 8. License: **MIT**.
 - **Optional-dependency groups:** `cli` (typer), `mcp` (mcp SDK), `docs`
   (mkdocs-material), `dev` (pytest/hypothesis/ruff/mypy/coverage + **scikit-learn,
@@ -84,7 +84,7 @@
 | 15 | Scale | CI: **10k×10k** within a committed ceiling on the runner; separate opt-in benchmark: **50k×50k** within a committed time/mem budget on **n2-standard-16**; ceilings committed, numbers tunable |
 | 16 | Structural prefilter | skip MinHash; use foldseek's own prefilter |
 | 17 | Cache | `$XDG_CACHE_HOME/veritas` (default `~/.cache/veritas`), env/config overridable, project-local opt-in; CI unit tests clean-cache |
-| 18 | Name + license | import/repo `veritas`; PyPI under distinct name (e.g. `veritas-audit`) at Phase 8; MIT |
+| 18 | Name + license | import/repo `veritas`; PyPI under distinct name (e.g. `veritas-leakage`) at Phase 8; MIT |
 | 19 | Python | CI 3.11–3.13; determinism gate on 3.12 |
 | 20 | Network | core suite hermetic/offline; network tests in opt-in job, never gate core CI |
 | 21 | MCP | stdio v1; server structured so HTTP/SSE can be added without touching tool logic |

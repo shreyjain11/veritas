@@ -55,7 +55,7 @@ runs:
           -c conda-forge -c bioconda
           mmseqs2=18.8cc5c diamond=2.2.1 foldseek=10.941cd33 hmmer=3.4
         cache-environment: true
-    - name: Install veritas-audit
+    - name: Install veritas-leakage
       shell: bash -el {0}
       # Install the action's own bundled package (matches the pinned ref; no PyPI dependency).
       run: pip install "${{ github.action_path }}[cli]"

@@ -2398,7 +2398,7 @@ wheels = [
 ]
 
 [[package]]
-name = "veritas-audit"
+name = "veritas-leakage"
 source = { editable = "." }
 dependencies = [
     { name = "datasketch" },

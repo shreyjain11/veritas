@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "veritas-audit"
+name = "veritas-leakage"
 description = "Model-agnostic, post-hoc leakage & robustness auditor for sequence-based biological predictors."
 readme = "README.md"
 requires-python = ">=3.11"
