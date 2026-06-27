@@ -1,4 +1,4 @@
-"""The common contamination-detector interface (CLAUDE.md first principle #5)."""
+"""The common contamination-detector interface (docs/SPEC.md first principle #5)."""
 
 from __future__ import annotations
 

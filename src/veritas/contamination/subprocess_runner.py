@@ -1,7 +1,7 @@
 """Sandboxed subprocess execution for the binary-backed detectors.
 
 The single choke point through which mmseqs / diamond / foldseek (and any HMMER
-binary used in differential tests) are invoked. Hardening rules (CLAUDE.md
+binary used in differential tests) are invoked. Hardening rules (docs/SPEC.md
 §subprocess): commands are an explicit argv list run with ``shell=False`` (so
 arguments are never shell-interpreted), inputs are validated, every call runs in
 a caller-provided working directory, and timeouts / nonzero exits are surfaced

@@ -1,7 +1,7 @@
 """Pluggable adapter Protocols — the only place model/benchmark specifics may live.
 
 Core logic depends on these abstractions, never on a concrete model, benchmark,
-or organism (CLAUDE.md first principle #5).
+or organism (docs/SPEC.md first principle #5).
 """
 
 from __future__ import annotations

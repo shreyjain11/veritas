@@ -2,7 +2,7 @@
 
 Ground truth is the *hand-specified* canonical byte string hashed with hashlib —
 not the implementation hashing itself — so this pins both canonicalization and
-the digest (CLAUDE.md: never assert a fabricated expected value).
+the digest (docs/SPEC.md: never assert a fabricated expected value).
 """
 
 from __future__ import annotations

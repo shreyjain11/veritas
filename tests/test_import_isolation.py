@@ -22,7 +22,7 @@ FORBIDDEN_MODULES: tuple[str, ...] = (
     "veritas.cli",
     "veritas.mcp",
     # Dataset/benchmark specifics live in veritas.demos; core must never import it
-    # (CLAUDE.md principle #5 -- model/benchmark specifics stay out of the core).
+    # (docs/SPEC.md principle #5 -- model/benchmark specifics stay out of the core).
     "veritas.demos",
     "typer",
     "mcp",

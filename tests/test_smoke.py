@@ -1,6 +1,6 @@
 """Phase 0 smoke test: the package imports and exposes a version.
 
-Authored test-first (CLAUDE.md first principle #2): this fails until the
+Authored test-first (docs/SPEC.md first principle #2): this fails until the
 ``veritas`` package exists with a ``__version__`` attribute.
 """
 

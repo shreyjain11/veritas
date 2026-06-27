@@ -6,11 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0] - 2026-06-18
 
-First packaged release. The audit engine and its interfaces are complete and
-validated by the test suite (100% coverage; `ruff`, `ruff format`, and
-`mypy --strict` all gate). The demonstration suite and external reproductions
-are in progress pending benchmark finalization — no demonstration or
-reproduction results are reported yet (see `docs/validation.md`).
+First packaged release. The audit engine, its interfaces, and the validation
+suite are complete (comprehensive coverage behind a ≥90% gate; `ruff`,
+`ruff format`, and `mypy --strict` all gate). Four demonstrations report real,
+locked numbers on pinned data — OverfitNN homology inflation, genomic
+reverse-complement detection, ProteinGym MSA-depth stratification, and PPI
+family + structural leakage (see `docs/validation.md`). No results are fabricated.
 
 ### Added
 
@@ -35,7 +36,14 @@ reproduction results are reported yet (see `docs/validation.md`).
 - **MCP server** (`mcp` extra) — the auditor exposed as MCP tools.
 - **GitHub Action** — a composite action (`action.yml`) wrapping audit + gate
   for drop-in CI use, with a runnable `examples/quickstart/` dataset.
-- **Documentation** (`docs` extra) — mkdocs-material site, including a
-  limitations & guarantees page.
+- **Documentation & web report viewer** — an in-browser viewer + project site
+  ([veritas-viewer.vercel.app](https://veritas-viewer.vercel.app), docs at
+  `/docs`) that re-verifies each report's `audit_hash` client-side; plus an
+  in-repo mkdocs reference (`docs` extra).
+- **Packaging & distribution** — distributed as `veritas-leakage`
+  (`pip install "veritas-leakage[cli]"`; the import package and the `veritas`
+  command are unchanged), and a batteries-included Docker image at
+  `ghcr.io/shreyjain11/veritas-leakage` that bakes in the pinned detector
+  binaries so it runs on any OS with no conda setup.
 
 [0.1.0]: https://github.com/shreyjain11/veritas/releases/tag/v0.1.0

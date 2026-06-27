@@ -1,4 +1,4 @@
-"""Sandboxed subprocess runner (security boundary, CLAUDE.md §subprocess).
+"""Sandboxed subprocess runner (security boundary, docs/SPEC.md §subprocess).
 
 All commands run from an explicit argv list with no shell; arguments are never
 shell-interpreted; inputs are validated; timeouts and nonzero exits are surfaced.

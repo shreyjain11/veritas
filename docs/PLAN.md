@@ -1,9 +1,9 @@
 # Veritas — File-Level Implementation Plan
 
-> Companion to `CLAUDE.md` (constitution) and `docs/SPEC.md` (architecture). This
+> Companion to `docs/SPEC.md` (architecture & first principles). This
 > document plans *how* each gated phase in SPEC §6 is built and *which tests*
 > (per the validation regime in SPEC §5) gate each phase. No implementation code
-> is written until a failing test specifies it (CLAUDE.md first principle #2).
+> is written until a failing test specifies it (`docs/SPEC.md` first principle #2).
 >
 > **Status:** plan approved with the decisions recorded in §0.5. Phase 0 is NOT
 > started — awaiting explicit "go".
@@ -42,11 +42,8 @@
   `requires_hmmer`, `requires_pfam`, `slow`, `scale`, `external`. Binary-gated
   tests auto-skip locally when the binary is absent and run for real in CI.
   **Skips never count toward coverage and are surfaced, never silent.**
-- **Coverage gate:** **90%** lines, authoritative. **Precedence rule (baked in):
-  `CLAUDE.md` and `docs/SPEC.md` override the generic ECC rule files
-  (`.claude/rules/ecc/**`) wherever they conflict** — e.g. the 90% gate here wins
-  over the 80% in `testing.md`. This precedence is documented in `README.md` and
-  the contributing notes.
+- **Coverage gate:** **90%** lines, authoritative — `docs/SPEC.md` is the source
+  of truth for the validation regime and completion criteria.
 - **Shared test infrastructure** (built early, reused everywhere):
   - `tests/conftest.py` — seeded-RNG fixture, tmp/clean cache dir, binary-skip
     logic, canonical-compare helpers.
@@ -80,7 +77,7 @@
 | 11 | Demo suite | **PROVISIONAL (confirm tomorrow):** ProteinGym DMS (sequence); a PPI/function benchmark (family + structural); a regulatory-DNA task (nucleotide) |
 | 12 | External repro | **PROVISIONAL:** #1 protein-interaction homology leakage (arXiv 2404.10457); #2 genome-trained cross-chromosome leakage (hashFrag); tolerances set once datasets fixed |
 | 13 | Determinism scope | byte-identical on pinned CI platform; floats canonicalized in serialization; seeds fixed; no cross-arch guarantee |
-| 14 | Coverage + precedence | 90% authoritative; CLAUDE.md/SPEC.md override generic ECC rule files on conflict |
+| 14 | Coverage | 90% line coverage, authoritative (per `docs/SPEC.md`) |
 | 15 | Scale | CI: **10k×10k** within a committed ceiling on the runner; separate opt-in benchmark: **50k×50k** within a committed time/mem budget on **n2-standard-16**; ceilings committed, numbers tunable |
 | 16 | Structural prefilter | skip MinHash; use foldseek's own prefilter |
 | 17 | Cache | `$XDG_CACHE_HOME/veritas` (default `~/.cache/veritas`), env/config overridable, project-local opt-in; CI unit tests clean-cache |
@@ -161,8 +158,7 @@ These are first-class and threaded into specific phases below.
 ### Files
 - `pyproject.toml` — hatchling; deps + optional groups (incl. test-only sklearn);
   tool config for ruff, mypy (`strict = true`), pytest, coverage (`fail_under=90`).
-- `.python-version`, `uv.lock`, `.gitignore`, `LICENSE` (MIT), `README.md`
-  (states the CLAUDE.md/SPEC.md-over-ECC precedence rule).
+- `.python-version`, `uv.lock`, `.gitignore`, `LICENSE` (MIT), `README.md`.
 - `environment.yml` — conda-forge + bioconda; the four pinned binaries.
 - `src/veritas/__init__.py` (`__version__`), `src/veritas/py.typed`.
 - `tests/__init__.py`, `tests/conftest.py` (skeleton), `tests/test_smoke.py`.
@@ -485,7 +481,7 @@ All green; CLI≡MCP parity proven; ≥90%.
 - Clean-checkout CI job — full suite green from scratch with pinned binaries.
 
 ### Gate
-Everything in CLAUDE.md "What done means" satisfied.
+All completion criteria in `docs/SPEC.md` satisfied.
 
 ---
 
