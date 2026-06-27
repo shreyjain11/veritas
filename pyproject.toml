@@ -48,9 +48,9 @@ mcp = ["mcp>=1.0"]
 docs = ["mkdocs-material>=9.5"]
 
 [project.urls]
-Homepage = "https://github.com/shreyjain11/veritas"
+Homepage = "https://veritas-viewer.vercel.app"
+Documentation = "https://veritas-viewer.vercel.app/docs"
 Repository = "https://github.com/shreyjain11/veritas"
-Documentation = "https://shreyjain11.github.io/veritas/"
 Changelog = "https://github.com/shreyjain11/veritas/blob/main/CHANGELOG.md"
 
 # Console entry point (requires the `cli` extra / typer at runtime).
@@ -157,7 +157,7 @@ module = ["veritas.mcp.server"]
 disallow_untyped_decorators = false
 
 # ----------------------------------------------------------------------------
-# Tests + coverage (gate: 90% lines, authoritative per CLAUDE.md)
+# Tests + coverage (gate: 90% lines, authoritative per docs/SPEC.md)
 # ----------------------------------------------------------------------------
 [tool.pytest.ini_options]
 minversion = "8.0"

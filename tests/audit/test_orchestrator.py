@@ -1,6 +1,6 @@
 """(a) The orchestrator: config -> contamination -> de-leak -> honest -> stratify -> report.
 
-run_audit is the single source of truth (CLAUDE.md / PLAN §8). It runs the whole
+run_audit is the single source of truth (docs/SPEC.md / PLAN §8). It runs the whole
 pipeline and returns a fully-assembled AuditReport. The cornerstone test is the
 req-C wiring: every MetricEstimate produced inside the pipeline leaves as a
 TracedValue whose provenance_ref resolves to the run's ProvenanceRecord -- a number

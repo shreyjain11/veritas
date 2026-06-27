@@ -1,8 +1,35 @@
 # Veritas — Architecture & Build Specification
 
 A model-agnostic, post-hoc **leakage & robustness auditor** for sequence-based
-biological predictors. This document is the source of truth for what gets built
-and in what order. Read alongside `CLAUDE.md`.
+biological predictors. This document is the source of truth for what gets built,
+in what order, and under which principles.
+
+---
+
+## 0. First principles (in priority order)
+
+1. **Correctness over everything.** An auditor that is sometimes wrong is worse
+   than useless — it launders false confidence. If a result cannot be validated,
+   it does not ship.
+2. **Validation-first / test-first.** No implementation code is written before a
+   failing test that specifies it; every module has a golden known-answer test.
+3. **Provenance is mandatory.** No number is emitted without an attached
+   provenance record (input content hashes, tool versions, params, seed).
+4. **Determinism.** Same inputs + same seed ⇒ byte-identical results and a stable
+   provenance hash. Non-determinism is a defect to hunt down, not tolerate.
+5. **Model-agnostic by construction.** Core logic never imports or assumes any
+   specific model, benchmark, or organism; specifics live behind pluggable adapters.
+6. **Honest uncertainty.** Every metric is reported with a confidence interval;
+   never present a point estimate as if it were exact.
+
+### Validation regime (non-negotiable)
+
+Unit tests for every public function (**≥90%** line coverage, CI-gated);
+golden/injected-leakage tests where the planted answer is known; property-based
+tests (Hypothesis); differential tests against reference tools; at least one
+external published-finding reproduction; a determinism test; and a scale test.
+Tests skipped, xfailed, or weakened to make CI green are a defect and must be
+flagged explicitly, never silently done.
 
 ---
 
@@ -127,7 +154,7 @@ Build is one complete product, executed in this order. **A phase is finished onl
 when its full test suite is green, coverage holds, and review/security passes.**
 
 - **Phase 0 — Scaffold.** Repo, `pyproject.toml` (hatchling), `uv` env, `ruff` +
-  `mypy --strict`, `pytest` harness, CI skeleton, `CLAUDE.md`, this spec, a
+  `mypy --strict`, `pytest` harness, CI skeleton, this spec, a
   failing smoke test. Pin mmseqs2/diamond versions.
 - **Phase 1 — Contracts + IO + Provenance.** pydantic schemas; FASTA/prediction/
   split loaders; provenance assembly + content hashing + stable audit hash.

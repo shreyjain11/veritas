@@ -1,6 +1,6 @@
 """Demonstration / reproduction datasets: manifests, fetching, and adapters.
 
-This subpackage holds all benchmark/dataset specifics (CLAUDE.md principle #5).
+This subpackage holds all benchmark/dataset specifics (docs/SPEC.md principle #5).
 Core Veritas never imports it; it depends on core, never the reverse.
 """
 
