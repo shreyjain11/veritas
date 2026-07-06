@@ -1,19 +1,12 @@
 import { Info } from "lucide-react";
 
-import type { AuditReport, DetectorCell, LeakageSplit } from "../../lib/audit-report";
+import type { AuditReport, DetectorCell } from "../../lib/audit-report";
 import { cn } from "../../lib/cn";
 import { fmtPct } from "../../lib/format";
 import { Eyebrow } from "../ui";
 
-// A row counts as "clean" when even its worst detector is near-zero. Clean rows recede to
-// a hairline and carry an iris verdict-edge; leaky rows read amber. Encoded redundantly:
-// fill length + the rate number + the verdict edge + the role label (never color-alone).
-const CLEAN_MAX_RATE = 0.05;
-
-function rowMaxRate(split: LeakageSplit): number {
-  return split.cells.reduce((m, c) => Math.max(m, rate(c)), 0);
-}
-
+// Leaky detectors read amber; a near-zero cell recedes to a hairline. Encoded redundantly by
+// fill length + the rate number + the role label — never color-alone.
 function rate(cell: DetectorCell): number {
   return cell.n_total > 0 ? cell.n_flagged / cell.n_total : 0;
 }
@@ -74,16 +67,11 @@ export function SplitsMatrix({ report }: { report: AuditReport }) {
 
           {/* rows */}
           {splits.map((split) => {
-            const clean = rowMaxRate(split) < CLEAN_MAX_RATE;
             const byDet = new Map(split.cells.map((c) => [c.detector, c]));
             return (
               <div
                 key={split.split_name}
-                className={cn(
-                  "grid items-stretch border-b border-hairline last:border-b-0",
-                  "border-l-2",
-                  clean ? "border-l-iris/70" : "border-l-warn/60",
-                )}
+                className="grid items-stretch border-b border-hairline last:border-b-0"
                 style={{ gridTemplateColumns: cols }}
               >
                 <div className="px-3 py-2.5">
@@ -106,7 +94,8 @@ export function SplitsMatrix({ report }: { report: AuditReport }) {
         <Info className="mr-1 inline size-3 align-[-1px]" aria-hidden />
         structural is fold-level (foldseek monomer TMalign) — a related but more permissive signal
         than iDist&apos;s interface-level redundancy; reported as its own quantity, not directly
-        comparable. Iris edge marks a clean control row; amber marks a leaky split.
+        comparable. A near-zero row — like the published control — recedes to hairline; amber cells
+        mark a leaky split.
       </p>
     </section>
   );

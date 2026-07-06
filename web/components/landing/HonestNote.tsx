@@ -6,7 +6,7 @@ const LINK =
 export function HonestNote() {
   return (
     <section className="mx-auto max-w-[1100px] px-5 py-10 sm:px-8">
-      <div className="max-w-3xl border-l-2 border-line pl-5">
+      <div className="max-w-3xl">
         <p className="text-[0.875rem] leading-relaxed text-secondary">
           An independent research project. Every number on this site is from a real run on pinned
           data, locked by a test — nothing is fabricated. Structural detection is fold-level
