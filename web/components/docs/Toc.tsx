@@ -39,10 +39,8 @@ export function Toc({ items }: { items: TocItem[] }) {
           key={it.id}
           href={`#${it.id}`}
           className={cn(
-            "rounded-sm border-l-2 px-3 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
-            active === it.id
-              ? "border-l-iris text-iris-fg"
-              : "border-l-transparent text-muted hover:text-fg",
+            "rounded-sm px-3 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
+            active === it.id ? "font-medium text-iris-fg" : "text-muted hover:text-fg",
           )}
         >
           {it.label}

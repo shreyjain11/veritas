@@ -157,9 +157,9 @@ export function Viewer() {
                       onClick={() => selectFixture(f.id)}
                       aria-current={selected ? "true" : undefined}
                       className={cn(
-                        "w-full rounded-md border-l-2 px-3 py-2 text-left transition-colors",
+                        "w-full rounded-md px-3 py-2 text-left transition-colors",
                         FOCUS,
-                        selected ? "border-l-iris bg-iris-dim/50" : "border-l-transparent hover:bg-elevated/60",
+                        selected ? "bg-iris-dim/50" : "hover:bg-elevated/60",
                       )}
                     >
                       <span className={cn("block text-[0.8125rem]", selected ? "text-iris-fg" : "text-fg")}>

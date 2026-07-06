@@ -93,10 +93,7 @@ function MiniMatrix({ report }: { report: AuditReport }) {
         return (
           <div
             key={s.split_name}
-            className={cn(
-              "flex items-center gap-2 border-l-2 pl-2",
-              clean ? "border-l-iris/70" : "border-l-warn/60",
-            )}
+            className="flex items-center gap-2"
           >
             <span
               className={cn(
