@@ -16,15 +16,12 @@ const KIND_LABEL: Record<string, string> = {
   stratification: "stratification",
 };
 
-function ResultCard({ id, featured, children }: { id: string; featured?: boolean; children: ReactNode }) {
+function ResultCard({ id, children }: { id: string; children: ReactNode }) {
   const fx = byId(id);
   return (
     <Link
       href={`/report?report=${id}`}
-      className={cn(
-        "group flex flex-col border-t border-hairline pt-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
-        featured && "sm:col-span-2",
-      )}
+      className="group flex flex-col border-t border-hairline pt-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-[0.9375rem] text-fg transition-colors group-hover:text-iris-fg">{fx.label}</h3>
@@ -137,12 +134,13 @@ function MiniMatrix({ report }: { report: AuditReport }) {
 
 export function Proof() {
   return (
-    <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-8">
-      <Eyebrow>five real audits · no fabricated numbers</Eyebrow>
-      <div className="mt-8 grid gap-x-10 gap-y-7 sm:grid-cols-2">
-        <ResultCard id="r3_random" featured>
-          <CollapseViz {...collapse(byId("r3_random").report)} variant="card" />
-        </ResultCard>
+    <section className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-20">
+      <Eyebrow>four more audits · across model types</Eyebrow>
+      <p className="mt-3 max-w-2xl text-pretty text-[0.9375rem] leading-relaxed text-secondary">
+        Each is a real run on pinned data, locked by a test — spanning genomic, variant-effect, and
+        protein-interaction models, and all three detector kinds. Nothing is fabricated.
+      </p>
+      <div className="mt-10 grid gap-x-12 gap-y-10 sm:grid-cols-2">
         <ResultCard id="r3_chr8_chr9">
           <CollapseViz {...collapse(byId("r3_chr8_chr9").report)} variant="card" />
         </ResultCard>
