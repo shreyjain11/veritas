@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Web report viewer polish** — fill-in bars on the reported/honest collapse
+  and leakage meters, scroll-reveal for the landing page's proof cards and
+  how-it-works steps, and small hover/focus micro-interactions across the
+  nav and report cards. All motion respects `prefers-reduced-motion`.
+
 ## [0.1.0] - 2026-06-18
 
 First packaged release. The audit engine, its interfaces, and the validation
