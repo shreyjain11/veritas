@@ -11,8 +11,8 @@ const LABEL: Record<VerifyState["status"], string> = {
 
 function Icon({ status }: { status: VerifyState["status"] }) {
   if (status === "verifying") return <Loader className="size-3.5 animate-spin text-muted" aria-hidden />;
-  if (status === "verified") return <CircleCheck className="size-3.5 text-iris-fg" aria-hidden />;
-  return <ShieldAlert className="size-3.5 text-danger-fg" aria-hidden />;
+  if (status === "verified") return <CircleCheck className="icon-pop size-3.5 text-iris-fg" aria-hidden />;
+  return <ShieldAlert className="icon-pop size-3.5 text-danger-fg" aria-hidden />;
 }
 
 /** Full seal for the desktop rail. */

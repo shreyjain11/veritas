@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import { cn } from "../../lib/cn";
 import { fmtMetric, fmtSigned, leakageShare } from "../../lib/format";
 
@@ -8,7 +10,7 @@ interface Props {
   variant?: "hero" | "card";
 }
 
-/** The reported→honest collapse — a static readout (no animation). */
+/** The reported→honest collapse — bars fill in on mount, the one place we lean on motion. */
 export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props) {
   const hero = variant === "hero";
   const max = Math.max(reported, honest) * 1.12 || 1;
@@ -24,8 +26,8 @@ export function CollapseViz({ reported, honest, delta, variant = "hero" }: Props
       <span className={cn("font-mono", lbl, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>{label}</span>
       <div className={cn("overflow-hidden rounded-sm bg-hairline", barH)}>
         <div
-          className={cn("h-full rounded-sm", tone === "warn" ? "bg-warn/70" : "bg-iris/70")}
-          style={{ width: `${pct(value)}%` }}
+          className={cn("bar-fill h-full rounded-sm", tone === "warn" ? "bg-warn/70" : "bg-iris/70")}
+          style={{ "--bar-w": `${pct(value)}%` } as CSSProperties}
         />
       </div>
       <span className={cn("text-right font-mono tnum", num, tone === "warn" ? "text-warn-fg" : "text-iris-fg")}>

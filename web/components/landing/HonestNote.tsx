@@ -1,12 +1,14 @@
 import Link from "next/link";
 
+import { Reveal } from "../Reveal";
+
 const LINK =
   "rounded-sm text-iris-fg underline-offset-4 transition-colors hover:text-iris hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris";
 
 export function HonestNote() {
   return (
     <section className="mx-auto max-w-[1100px] px-5 py-10 sm:px-8">
-      <div className="max-w-3xl">
+      <Reveal className="max-w-3xl">
         <p className="text-[0.875rem] leading-relaxed text-secondary">
           An independent research project. Every number on this site is from a real run on pinned
           data, locked by a test — nothing is fabricated. Structural detection is fold-level
@@ -24,7 +26,7 @@ export function HonestNote() {
             Docs
           </Link>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

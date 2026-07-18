@@ -1,10 +1,11 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import type { AuditReport } from "../../lib/audit-report";
 import { cn } from "../../lib/cn";
 import { FIXTURES } from "../../lib/fixtures";
 import { fmtMetric, fmtPct } from "../../lib/format";
+import { Reveal } from "../Reveal";
 import { Eyebrow } from "../ui";
 import { CollapseViz } from "./CollapseViz";
 
@@ -16,25 +17,27 @@ const KIND_LABEL: Record<string, string> = {
   stratification: "stratification",
 };
 
-function ResultCard({ id, children }: { id: string; children: ReactNode }) {
+function ResultCard({ id, delay = 0, children }: { id: string; delay?: number; children: ReactNode }) {
   const fx = byId(id);
   return (
-    <Link
-      href={`/report?report=${id}`}
-      className="group flex flex-col border-t border-hairline pt-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-[0.9375rem] text-fg transition-colors group-hover:text-iris-fg">{fx.label}</h3>
-        <span className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-faint">
-          {KIND_LABEL[fx.report.report_kind ?? "metric_audit"]}
+    <Reveal delay={delay}>
+      <Link
+        href={`/report?report=${id}`}
+        className="group flex flex-col border-t border-hairline pt-5 transition-transform duration-300 ease-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
+      >
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="text-[0.9375rem] text-fg transition-colors group-hover:text-iris-fg">{fx.label}</h3>
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-faint">
+            {KIND_LABEL[fx.report.report_kind ?? "metric_audit"]}
+          </span>
+        </div>
+        <div className="mt-4">{children}</div>
+        <p className="mt-4 text-pretty text-[0.8125rem] leading-relaxed text-secondary">{fx.finding}</p>
+        <span className="mt-3 font-mono text-[0.75rem] text-iris-fg transition-transform group-hover:translate-x-1">
+          Open audit →
         </span>
-      </div>
-      <div className="mt-4">{children}</div>
-      <p className="mt-4 text-pretty text-[0.8125rem] leading-relaxed text-secondary">{fx.finding}</p>
-      <span className="mt-3 font-mono text-[0.75rem] text-iris-fg transition-transform group-hover:translate-x-0.5">
-        Open audit →
-      </span>
-    </Link>
+      </Link>
+    </Reveal>
   );
 }
 
@@ -56,7 +59,7 @@ function Meter({ report }: { report: AuditReport }) {
         <span className="text-[0.6875rem] text-muted">reverse-complement</span>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-sm bg-hairline">
-        <div className="h-full rounded-sm bg-warn/70" style={{ width: `${rate * 100}%` }} />
+        <div className="bar-fill h-full rounded-sm bg-warn/70" style={{ "--bar-w": `${rate * 100}%` } as CSSProperties} />
       </div>
     </div>
   );
@@ -67,10 +70,16 @@ function Gradient({ report }: { report: AuditReport }) {
   const max = Math.max(...strata.map((s) => s.metric.value ?? 0), 0.001);
   return (
     <div className="flex h-24 items-end gap-3">
-      {strata.map((s) => (
+      {strata.map((s, i) => (
         <div key={s.bucket_index} className="flex flex-1 flex-col items-center gap-1.5">
           <span className="font-mono text-[0.75rem] text-iris-fg tnum">{fmtMetric(s.metric.value)}</span>
-          <div className="w-full rounded-sm bg-iris/55" style={{ height: `${((s.metric.value ?? 0) / max) * 70}px` }} />
+          <div
+            className="w-full origin-bottom rounded-sm bg-iris/55"
+            style={{
+              height: `${((s.metric.value ?? 0) / max) * 70}px`,
+              animation: `pop 480ms ${80 + i * 70}ms cubic-bezier(0.16,1,0.3,1) both`,
+            }}
+          />
           <span className="font-mono text-[0.625rem] text-muted">{s.bucket_label}</span>
         </div>
       ))}
@@ -138,16 +147,16 @@ export function Proof() {
         protein-interaction models, and all three detector kinds. Nothing is fabricated.
       </p>
       <div className="mt-10 grid gap-x-12 gap-y-10 sm:grid-cols-2">
-        <ResultCard id="r3_chr8_chr9">
+        <ResultCard id="r3_chr8_chr9" delay={0}>
           <CollapseViz {...collapse(byId("r3_chr8_chr9").report)} variant="card" />
         </ResultCard>
-        <ResultCard id="r2_reverse_complement">
+        <ResultCard id="r2_reverse_complement" delay={80}>
           <Meter report={byId("r2_reverse_complement").report} />
         </ResultCard>
-        <ResultCard id="proteingym_msa_depth">
+        <ResultCard id="proteingym_msa_depth" delay={0}>
           <Gradient report={byId("proteingym_msa_depth").report} />
         </ResultCard>
-        <ResultCard id="ppi_interface">
+        <ResultCard id="ppi_interface" delay={80}>
           <MiniMatrix report={byId("ppi_interface").report} />
         </ResultCard>
       </div>
