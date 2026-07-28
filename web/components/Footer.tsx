@@ -7,8 +7,11 @@ export function Footer() {
   return (
     <footer className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-hairline pt-5 text-[0.75rem] text-muted">
       <span className="font-mono text-secondary">veritas</span>
-      <span className="text-faint">model-agnostic leakage &amp; robustness auditor</span>
+      <span className="text-faint">benchmark integrity for frontier-model evaluation</span>
       <nav className="ml-auto flex gap-4">
+        <Link href="/run" className={LINK}>
+          Run audit
+        </Link>
         <Link href="/" className={LINK}>
           Overview
         </Link>

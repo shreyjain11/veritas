@@ -1,9 +1,8 @@
 """Human-readable Markdown report (jinja2; deterministic; structure-safe).
 
-Markdown is not auto-escaped, so free-text/user-controlled values (benchmark name,
-detector & tool names, provenance refs, limitation text) go through md_escape to keep
-pipes/backticks/newlines from corrupting tables or headings. Internally-generated
-fields (numbers, fixed labels, validated axis names) are already safe.
+Jinja HTML-escapes free text to prevent raw-HTML injection in Markdown viewers. The
+additional ``md_escape`` filter keeps pipes/backticks/newlines from corrupting tables
+or headings. Internally-generated fields are already safe.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ from veritas.report._context import build_context
 from veritas.report.numbers import md_escape
 
 _ENV = jinja2.Environment(
-    autoescape=False, trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=True
+    autoescape=True, trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=True
 )
 _ENV.filters["md_escape"] = md_escape
 

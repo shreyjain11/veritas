@@ -4,16 +4,25 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-06-18
+## [0.1.0] - 2026-07-27
 
-First packaged release. The audit engine, its interfaces, and the validation
-suite are complete (comprehensive coverage behind a ≥90% gate; `ruff`,
-`ruff format`, and `mypy --strict` all gate). Four demonstrations report real,
-locked numbers on pinned data — OverfitNN homology inflation, genomic
-reverse-complement detection, ProteinGym MSA-depth stratification, and PPI
-family + structural leakage (see `docs/validation.md`). No results are fabricated.
+First public packaged release. Veritas v2 adds a model-agnostic benchmark-integrity
+system while retaining the established biological audit engine as a supported
+legacy domain. The validation suite contains more than 600 collected tests and a
+90% coverage gate. No results are fabricated.
 
 ### Added
+
+- **Benchmark-integrity v2** — schema-versioned benchmark, model-response,
+  transformation, finding, evidence-matrix, score, and provenance contracts.
+- **Frontier-model workflow** — benchmark catalog, replay/OpenAI-compatible/local
+  model adapters, deterministic transformations, resumable cache, statistical
+  comparisons, privacy inspection, and schema-v2 evidence packages.
+- **Browser audit console** — BYOK hosted audits for allowlisted providers and
+  public benchmarks, with bounded request counts and ephemeral secret handling.
+- **Schema-v2 report viewer** — executive scores, findings, evidence matrix,
+  transformation validity, item evidence, limitations, and provenance, alongside
+  the distinct legacy-v1 viewer.
 
 - **Audit pipeline** — `veritas.audit.run_audit`: detect leakage → de-leak →
   honest re-score → stratify → signed report.

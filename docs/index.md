@@ -1,16 +1,14 @@
 # Veritas
 
-**Veritas** is a model-agnostic, post-hoc leakage & robustness auditor for
-sequence-based biological predictors. It takes a model's predictions (already
-computed), the evaluation sequences, and a reference set the model could have
-memorized — and it answers one question honestly:
+**Veritas** is a model-agnostic benchmark-integrity auditor. It evaluates whether
+frontier-model benchmark claims survive validated transformations and available
+exposure controls, while naming uncertainty and alternative explanations.
 
-> How much of the reported performance survives once train/test leakage is
-> removed?
+> How robust is the reported benchmark score to meaningful changes in its surface
+> form, evaluation protocol, and independently authored equivalents?
 
-Veritas never calls your model. It works on the predictions you hand it, so it
-applies equally to a protein language model, a CNN on DNA, a docking score, or a
-black-box API.
+Veritas supports replay fixtures, closed API models, and compatible local endpoints.
+The prior biological auditor is retained as a legacy domain.
 
 ## What it does
 

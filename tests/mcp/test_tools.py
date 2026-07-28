@@ -25,7 +25,16 @@ from tests.mcp import planted_graph, write_audit_fixtures, write_graph
 from veritas.contamination.registry import register_detector
 from veritas.mcp.tools import TOOL_SPECS, call_tool
 
-_EXPECTED_TOOLS = {"detect_leakage", "rescore", "stratify", "run_audit", "get_provenance"}
+_EXPECTED_TOOLS = {
+    "detect_leakage",
+    "rescore",
+    "stratify",
+    "run_audit",
+    "get_provenance",
+    "inspect_audit",
+    "run_benchmark_audit",
+    "list_benchmarks",
+}
 
 
 def _register(name: str) -> None:
@@ -45,6 +54,11 @@ def _audit_args(tmp_path: Path) -> dict[str, str]:
 
 def test_registry_exposes_exactly_the_five_tools() -> None:
     assert {spec.name for spec in TOOL_SPECS} == _EXPECTED_TOOLS
+
+
+def test_list_benchmarks_tool_returns_catalog_without_network() -> None:
+    result = call_tool("list_benchmarks", {})
+    assert any(item["name"] == "mmlu" for item in result["benchmarks"])
 
 
 def test_tool_handlers_do_not_require_the_mcp_sdk() -> None:

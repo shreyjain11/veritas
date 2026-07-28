@@ -22,35 +22,35 @@ function Commit({ label, body }: { label: string; body: string }) {
 export function HowItWorks() {
   return (
     <section id="how" className="mx-auto max-w-[1100px] scroll-mt-16 px-5 py-14 sm:px-8">
-      <Eyebrow>how it works</Eyebrow>
+      <Eyebrow>one reproducible workflow</Eyebrow>
       <p className="mt-3 max-w-2xl text-pretty text-[0.9375rem] leading-relaxed text-secondary">
-        Predictions in → audit out. Veritas works on predictions you already have, so it applies to
-        a protein language model, a DNA CNN, a docking score, or a black-box API.
+        Point Veritas at a benchmark and an API, local open-weight model, subprocess, or replayed
+        response set. The same application service powers inspection, execution, and reporting.
       </p>
 
       <ol className="mt-8 grid gap-6 sm:grid-cols-3">
         <Step
           n="01"
-          title="Detect leakage"
-          body="sequence (mmseqs) · family (Pfam / HMMER) · structural (foldseek, fold-level)"
+          title="Evaluate the canonical set"
+          body="Capture every prompt, raw response, parsed answer, token count, latency, model setting, and cache key."
         />
         <Step
           n="02"
-          title="Re-score honestly"
-          body="the metric recomputed on the de-leaked set, with bootstrap confidence intervals"
+          title="Stress-test the score"
+          body="Apply seeded, validated prompt, template, choice-order, identifier, notation, and task-specific transformations."
         />
         <Step
           n="03"
-          title="Stratify & sign"
-          body="performance by difficulty, plus an audit_hash over every number in the report"
+          title="Map the evidence"
+          body="Compare paired scores with uncertainty, detector findings, alternatives, unavailable evidence, and an audit hash."
         />
       </ol>
 
       <div className="mt-10 grid gap-x-10 gap-y-5 border-t border-hairline pt-6 sm:grid-cols-2">
-        <Commit label="provenance" body="every number carries where it came from" />
-        <Commit label="deterministic" body="byte-identical reports on the pinned platform" />
-        <Commit label="honest CIs" body="uncertainty + disclosed limitations travel inside the report" />
-        <Commit label="tamper-evident" body="re-verify the audit_hash yourself, in the browser" />
+        <Commit label="provider-neutral" body="HTTP APIs, vLLM, local Transformers, subprocesses, mocks, and replay" />
+        <Commit label="private-aware" body="external transfer requires an explicit acknowledgement and redacted provenance" />
+        <Commit label="resumable" body="content-addressed responses and staged checkpoints prevent duplicate inference" />
+        <Commit label="evidence-first" body="effect sizes, uncertainty, assumptions, alternatives, and not-run outcomes stay visible" />
       </div>
     </section>
   );

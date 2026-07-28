@@ -1,9 +1,9 @@
-"""Veritas: a model-agnostic, post-hoc leakage & robustness auditor for
-sequence-based biological predictors.
+"""Veritas: a model-agnostic benchmark-integrity auditor.
 
 This top-level package is the importable core. Per SPEC §3 it must import
 cleanly without the optional ``cli`` or ``mcp`` layers (and without the
-test-only ``scikit-learn`` dependency) being present.
+test-only ``scikit-learn`` dependency). The established sequence-based
+biological auditor remains available as a supported legacy domain.
 """
 
 from __future__ import annotations

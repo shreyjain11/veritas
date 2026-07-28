@@ -18,23 +18,23 @@ const plexMono = IBM_Plex_Mono({
 });
 
 const DESCRIPTION =
-  "A model-agnostic, post-hoc leakage & robustness auditor for sequence-based biological predictors. See how much reported performance survives once train/test homology is removed.";
+  "Check whether frontier models are benchmark maxxing. Veritas audits score robustness, protocol dependence, exposure-consistent signals, controls, uncertainty, and provenance.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://veritas-viewer.vercel.app"),
-  title: "Veritas — leakage & robustness auditor",
+  title: "Veritas — frontier-model benchmark integrity auditor",
   description: DESCRIPTION,
   applicationName: "Veritas",
   openGraph: {
     type: "website",
     siteName: "Veritas",
-    title: "Veritas — leakage & robustness auditor",
+    title: "Veritas — frontier-model benchmark integrity auditor",
     description: DESCRIPTION,
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Veritas — leakage & robustness auditor",
+    title: "Veritas — frontier-model benchmark integrity auditor",
     description: DESCRIPTION,
   },
 };

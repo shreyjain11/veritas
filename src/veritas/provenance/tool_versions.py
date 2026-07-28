@@ -6,7 +6,8 @@ to the tool and is exercised for real against the pinned binaries in Phase 2.
 
 from __future__ import annotations
 
-import subprocess
+# Fixed detector names, argv execution only.
+import subprocess  # nosec B404
 from collections.abc import Callable, Sequence
 
 #: A runner takes an argv list and returns the tool's version output.
@@ -16,7 +17,10 @@ _UNAVAILABLE = "unavailable"
 
 
 def _default_runner(args: Sequence[str]) -> str:
-    result = subprocess.run(list(args), capture_output=True, text=True, check=True)
+    # Internal detector argv, never shell text.
+    result = subprocess.run(  # nosec B603
+        list(args), capture_output=True, text=True, check=True
+    )
     return (result.stdout or result.stderr).strip()
 
 

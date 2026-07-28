@@ -34,7 +34,8 @@ def verify_file(path: Path, expected_sha256: str) -> None:
 def _https_download(url: str, dest: Path) -> None:
     if not url.startswith("https://"):
         raise ValueError(f"refusing non-https source url: {url!r}")
-    with urllib.request.urlopen(url) as response:  # pragma: no cover - network
+    # B310: _validate_source_url above permits HTTPS only.
+    with urllib.request.urlopen(url) as response:  # nosec B310  # pragma: no cover - network
         dest.write_bytes(response.read())  # pragma: no cover - network
 
 
