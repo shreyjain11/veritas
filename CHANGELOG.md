@@ -20,6 +20,8 @@ legacy domain. The validation suite contains more than 600 collected tests and a
   comparisons, privacy inspection, and schema-v2 evidence packages.
 - **Browser audit console** — BYOK hosted audits for allowlisted providers and
   public benchmarks, with bounded request counts and ephemeral secret handling.
+- **Web interaction polish** — accessible scroll-reveal and hover/focus
+  micro-interactions that respect `prefers-reduced-motion`.
 - **Schema-v2 report viewer** — executive scores, findings, evidence matrix,
   transformation validity, item evidence, limitations, and provenance, alongside
   the distinct legacy-v1 viewer.

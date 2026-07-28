@@ -1,3 +1,4 @@
+import { Reveal } from "../Reveal";
 import { Eyebrow } from "../ui";
 
 const EVIDENCE = [
@@ -43,19 +44,21 @@ export function Proof() {
         controlled comparisons and keeps conflicting or missing evidence visible.
       </p>
       <div className="mt-10 grid gap-x-12 gap-y-10 sm:grid-cols-2">
-        {EVIDENCE.map((item) => (
-          <article key={item.title} className="border-t border-hairline pt-5">
+        {EVIDENCE.map((item, index) => (
+          <Reveal key={item.title} as="article" delay={(index % 2) * 80} className="border-t border-hairline pt-5">
             <div className="flex items-baseline justify-between gap-3">
               <h3 className="text-[0.9375rem] text-fg">{item.title}</h3>
               <span className="shrink-0 font-mono text-[0.625rem] uppercase tracking-[0.06em] text-iris-fg">
                 {item.tag}
               </span>
             </div>
-            <p className="mt-4 text-pretty text-[0.8125rem] leading-relaxed text-secondary">{item.body}</p>
-          </article>
+            <p className="mt-4 text-pretty text-[0.8125rem] leading-relaxed text-secondary">
+              {item.body}
+            </p>
+          </Reveal>
         ))}
       </div>
-      <div className="mt-12 border-t border-hairline pt-5">
+      <Reveal className="mt-12 border-t border-hairline pt-5">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h3 className="text-[0.9375rem] text-fg">Built-in benchmark catalog</h3>
           <span className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-muted">
@@ -64,15 +67,19 @@ export function Proof() {
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {BENCHMARKS.map((name) => (
-            <span key={name} className="rounded border border-line bg-surface/30 px-2.5 py-1 font-mono text-[0.6875rem] text-secondary">
+            <span
+              key={name}
+              className="rounded border border-line bg-surface/30 px-2.5 py-1 font-mono text-[0.6875rem] text-secondary"
+            >
               {name}
             </span>
           ))}
         </div>
         <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted">
-          Presets preserve upstream source, split, revision, license, access constraints, and deterministic sampling in provenance.
+          Presets preserve upstream source, split, revision, license, access constraints, and
+          deterministic sampling in provenance.
         </p>
-      </div>
+      </Reveal>
     </section>
   );
 }

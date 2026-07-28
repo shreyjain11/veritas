@@ -1,6 +1,8 @@
+import type { CSSProperties } from "react";
+
 import type { AuditReport } from "../../lib/audit-report";
 import { fmtPct } from "../../lib/format";
-import { Eyebrow, Panel } from "../ui";
+import { Panel } from "../ui";
 
 export function LeakageMeter({ report }: { report: AuditReport }) {
   const leakage = report.leakage;
@@ -28,7 +30,7 @@ export function LeakageMeter({ report }: { report: AuditReport }) {
         <span className="text-[0.75rem] text-muted">contaminated by train/test homology</span>
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-sm bg-hairline">
-        <div className="h-full rounded-sm bg-warn/70" style={{ width: `${frac * 100}%` }} />
+        <div className="bar-fill h-full rounded-sm bg-warn/70" style={{ "--bar-w": `${frac * 100}%` } as CSSProperties} />
       </div>
       {detectors.length > 0 && (
         <div className="mt-4 flex flex-col gap-1.5">

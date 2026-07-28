@@ -194,23 +194,24 @@ export function Viewer() {
             </div>
           )}
 
-          <ErrorBoundary
-            key={active.id}
-            fallback={(err) => (
-              <div className="rounded-md border border-danger/40 bg-danger-dim px-5 py-4">
-                <div className="flex items-center gap-2 text-danger-fg">
-                  <TriangleAlert className="size-4" aria-hidden />
-                  <h3 className="text-[0.875rem] font-medium">This report couldn&apos;t be rendered</h3>
+          <div key={active.id} className="enter">
+            <ErrorBoundary
+              fallback={(err) => (
+                <div className="rounded-md border border-danger/40 bg-danger-dim px-5 py-4">
+                  <div className="flex items-center gap-2 text-danger-fg">
+                    <TriangleAlert className="size-4" aria-hidden />
+                    <h3 className="text-[0.875rem] font-medium">This report couldn&apos;t be rendered</h3>
+                  </div>
+                  <p className="mt-2 font-mono text-[0.75rem] leading-relaxed text-secondary">{err.message}</p>
+                  <p className="mt-2 text-[0.8125rem] text-muted">
+                    Pick a specimen from the list, or load a report that matches the AuditReport schema.
+                  </p>
                 </div>
-                <p className="mt-2 font-mono text-[0.75rem] leading-relaxed text-secondary">{err.message}</p>
-                <p className="mt-2 text-[0.8125rem] text-muted">
-                  Pick a specimen from the list, or load a report that matches the AuditReport schema.
-                </p>
-              </div>
-            )}
-          >
-            <ReportPanels report={active.report} />
-          </ErrorBoundary>
+              )}
+            >
+              <ReportPanels report={active.report} />
+            </ErrorBoundary>
+          </div>
 
           <Footer />
         </main>

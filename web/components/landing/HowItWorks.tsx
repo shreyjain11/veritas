@@ -1,21 +1,22 @@
+import { Reveal } from "../Reveal";
 import { Eyebrow } from "../ui";
 
-function Step({ n, title, body }: { n: string; title: string; body: string }) {
+function Step({ n, title, body, delay = 0 }: { n: string; title: string; body: string; delay?: number }) {
   return (
-    <li className="flex flex-col gap-1.5">
+    <Reveal as="li" delay={delay} className="flex flex-col gap-1.5">
       <span className="font-mono text-[0.75rem] text-iris-fg tnum">{n}</span>
       <h3 className="text-[0.9375rem] text-fg">{title}</h3>
       <p className="text-[0.8125rem] leading-relaxed text-secondary">{body}</p>
-    </li>
+    </Reveal>
   );
 }
 
-function Commit({ label, body }: { label: string; body: string }) {
+function Commit({ label, body, delay = 0 }: { label: string; body: string; delay?: number }) {
   return (
-    <div>
+    <Reveal delay={delay}>
       <span className="font-mono text-[0.75rem] text-fg">{label}</span>
       <p className="mt-1 text-pretty text-[0.8125rem] leading-relaxed text-secondary">{body}</p>
-    </div>
+    </Reveal>
   );
 }
 
@@ -33,24 +34,43 @@ export function HowItWorks() {
           n="01"
           title="Evaluate the canonical set"
           body="Capture every prompt, raw response, parsed answer, token count, latency, model setting, and cache key."
+          delay={0}
         />
         <Step
           n="02"
           title="Stress-test the score"
           body="Apply seeded, validated prompt, template, choice-order, identifier, notation, and task-specific transformations."
+          delay={90}
         />
         <Step
           n="03"
           title="Map the evidence"
           body="Compare paired scores with uncertainty, detector findings, alternatives, unavailable evidence, and an audit hash."
+          delay={180}
         />
       </ol>
 
       <div className="mt-10 grid gap-x-10 gap-y-5 border-t border-hairline pt-6 sm:grid-cols-2">
-        <Commit label="provider-neutral" body="HTTP APIs, vLLM, local Transformers, subprocesses, mocks, and replay" />
-        <Commit label="private-aware" body="external transfer requires an explicit acknowledgement and redacted provenance" />
-        <Commit label="resumable" body="content-addressed responses and staged checkpoints prevent duplicate inference" />
-        <Commit label="evidence-first" body="effect sizes, uncertainty, assumptions, alternatives, and not-run outcomes stay visible" />
+        <Commit
+          label="provider-neutral"
+          body="HTTP APIs, vLLM, local Transformers, subprocesses, mocks, and replay"
+          delay={0}
+        />
+        <Commit
+          label="private-aware"
+          body="external transfer requires an explicit acknowledgement and redacted provenance"
+          delay={60}
+        />
+        <Commit
+          label="resumable"
+          body="content-addressed responses and staged checkpoints prevent duplicate inference"
+          delay={120}
+        />
+        <Commit
+          label="evidence-first"
+          body="effect sizes, uncertainty, assumptions, alternatives, and not-run outcomes stay visible"
+          delay={180}
+        />
       </div>
     </section>
   );
