@@ -22,7 +22,16 @@ from tests.mcp import planted_graph, write_audit_fixtures
 from veritas.contamination.registry import register_detector
 from veritas.mcp.server import build_server, list_tools
 
-_EXPECTED_TOOLS = {"detect_leakage", "rescore", "stratify", "run_audit", "get_provenance"}
+_EXPECTED_TOOLS = {
+    "detect_leakage",
+    "rescore",
+    "stratify",
+    "run_audit",
+    "get_provenance",
+    "inspect_audit",
+    "run_benchmark_audit",
+    "list_benchmarks",
+}
 
 
 def test_build_server_constructs_without_error() -> None:

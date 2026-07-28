@@ -75,10 +75,12 @@ class FoldseekSearch:
             query_dir.mkdir()
             target_dir.mkdir()
             for eval_item in eval_items:
-                assert eval_item.structure_path is not None
+                if eval_item.structure_path is None:
+                    raise ValueError(f"evaluation item {eval_item.id!r} has no structure path")
                 shutil.copy(eval_item.structure_path, query_dir / f"{eval_item.id}.pdb")
             for ref_item in reference_items:
-                assert ref_item.structure_path is not None
+                if ref_item.structure_path is None:
+                    raise ValueError(f"reference item {ref_item.id!r} has no structure path")
                 shutil.copy(ref_item.structure_path, target_dir / f"{ref_item.id}.pdb")
             out = tmp / "result.tsv"
             binary = self.binary_path or self._binary_name

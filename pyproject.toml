@@ -4,14 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "veritas-leakage"
-description = "Model-agnostic, post-hoc leakage & robustness auditor for sequence-based biological predictors."
+description = "Model-agnostic benchmark-integrity auditor for frontier-model evaluation claims."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Veritas contributors" }]
 keywords = [
-    "bioinformatics",
+    "ai-evaluation",
+    "benchmark-integrity",
     "machine-learning",
     "data-leakage",
     "benchmarking",
@@ -24,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Typing :: Typed",
 ]
@@ -46,6 +48,9 @@ dependencies = [
 cli = ["typer>=0.12"]
 mcp = ["mcp>=1.0"]
 docs = ["mkdocs-material>=9.5"]
+local-model = ["transformers>=4.48", "torch>=2.2"]
+benchmarks = ["datasets>=3.2"]
+yaml = ["PyYAML>=6.0"]
 
 [project.urls]
 Homepage = "https://veritas-viewer.vercel.app"
@@ -87,10 +92,12 @@ packages = ["src/veritas"]
 include = [
     "src/veritas",
     "examples/quickstart",
+    "examples/benchmark_integrity",
     "environment.yml",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
+    "SECURITY.md",
     "pyproject.toml",
 ]
 # hatchling auto-globs every README.md/LICENSE in the tree; without this it would still
@@ -147,6 +154,11 @@ ignore_missing_imports = true
 # (only veritas.mcp.server imports it). Confined there by import-isolation.
 [[tool.mypy.overrides]]
 module = ["mcp", "mcp.*"]
+follow_imports = "skip"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["transformers", "torch", "datasets"]
 follow_imports = "skip"
 ignore_missing_imports = true
 

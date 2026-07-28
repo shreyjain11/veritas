@@ -1,7 +1,7 @@
 # Usage
 
 Two supported install paths. Use **Docker** to have the detector binaries handled
-for you on any OS; use **pip** if you already manage MMseqs2 / HMMER / Foldseek.
+for you on any OS; use **PyPI** if you already manage MMseqs2 / HMMER / Foldseek.
 
 ## Install — Docker (binaries baked in, any OS)
 
@@ -29,15 +29,15 @@ provenance, so results reproduce across machines. The image is built for
 `linux/amd64` (it runs under emulation on Apple Silicon). A ready-to-run
 quickstart is bundled at `/opt/veritas/examples/quickstart` inside the image.
 
-## Install — pip (you provide the binaries)
+## Install — PyPI (you provide the binaries)
 
 ```bash
-pip install "veritas-leakage[cli]"
+python -m pip install "veritas-leakage[cli]"
 ```
 
-The core package is dependency-light. The `cli` extra adds the `veritas`
-command; the `mcp` extra exposes the auditor as an MCP server; the `docs` extra
-builds this site. Plain `pip install veritas-leakage` installs the library only.
+The `cli` extra adds the `veritas` command; the `mcp` extra exposes the auditor
+as an MCP server; the `docs` extra builds this site. From a repository checkout,
+`uv sync --extra cli` is equivalent for development.
 
 Detection backends (MMseqs2, HMMER, Foldseek) are external binaries. Install the
 pinned versions with `micromamba create -f environment.yml` (then

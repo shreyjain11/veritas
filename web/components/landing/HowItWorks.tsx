@@ -23,42 +23,54 @@ function Commit({ label, body, delay = 0 }: { label: string; body: string; delay
 export function HowItWorks() {
   return (
     <section id="how" className="mx-auto max-w-[1100px] scroll-mt-16 px-5 py-14 sm:px-8">
-      <Eyebrow>how it works</Eyebrow>
+      <Eyebrow>one reproducible workflow</Eyebrow>
       <p className="mt-3 max-w-2xl text-pretty text-[0.9375rem] leading-relaxed text-secondary">
-        Predictions in → audit out. Veritas works on predictions you already have, so it applies to
-        a protein language model, a DNA CNN, a docking score, or a black-box API.
+        Point Veritas at a benchmark and an API, local open-weight model, subprocess, or replayed
+        response set. The same application service powers inspection, execution, and reporting.
       </p>
 
       <ol className="mt-8 grid gap-6 sm:grid-cols-3">
         <Step
           n="01"
-          title="Detect leakage"
-          body="sequence (mmseqs) · family (Pfam / HMMER) · structural (foldseek, fold-level)"
+          title="Evaluate the canonical set"
+          body="Capture every prompt, raw response, parsed answer, token count, latency, model setting, and cache key."
           delay={0}
         />
         <Step
           n="02"
-          title="Re-score honestly"
-          body="the metric recomputed on the de-leaked set, with bootstrap confidence intervals"
+          title="Stress-test the score"
+          body="Apply seeded, validated prompt, template, choice-order, identifier, notation, and task-specific transformations."
           delay={90}
         />
         <Step
           n="03"
-          title="Stratify & sign"
-          body="performance by difficulty, plus an audit_hash over every number in the report"
+          title="Map the evidence"
+          body="Compare paired scores with uncertainty, detector findings, alternatives, unavailable evidence, and an audit hash."
           delay={180}
         />
       </ol>
 
       <div className="mt-10 grid gap-x-10 gap-y-5 border-t border-hairline pt-6 sm:grid-cols-2">
-        <Commit label="provenance" body="every number carries where it came from" delay={0} />
-        <Commit label="deterministic" body="byte-identical reports on the pinned platform" delay={60} />
         <Commit
-          label="honest CIs"
-          body="uncertainty + disclosed limitations travel inside the report"
+          label="provider-neutral"
+          body="HTTP APIs, vLLM, local Transformers, subprocesses, mocks, and replay"
+          delay={0}
+        />
+        <Commit
+          label="private-aware"
+          body="external transfer requires an explicit acknowledgement and redacted provenance"
+          delay={60}
+        />
+        <Commit
+          label="resumable"
+          body="content-addressed responses and staged checkpoints prevent duplicate inference"
           delay={120}
         />
-        <Commit label="tamper-evident" body="re-verify the audit_hash yourself, in the browser" delay={180} />
+        <Commit
+          label="evidence-first"
+          body="effect sizes, uncertainty, assumptions, alternatives, and not-run outcomes stay visible"
+          delay={180}
+        />
       </div>
     </section>
   );

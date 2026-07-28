@@ -10,20 +10,20 @@ export function HonestNote() {
     <section className="mx-auto max-w-[1100px] px-5 py-10 sm:px-8">
       <Reveal className="max-w-3xl">
         <p className="text-[0.875rem] leading-relaxed text-secondary">
-          An independent research project. Every number on this site is from a real run on pinned
-          data, locked by a test — nothing is fabricated. Structural detection is fold-level
-          (foldseek), a more permissive signal than interface-level redundancy; results corroborate
-          prior work qualitatively, not numerically.
+          Veritas does not convert behavioral anomalies into a contamination verdict. Results
+          distinguish exact or semantic exposure evidence, protocol dependence, evaluator weakness,
+          distribution shift, legitimate capability, unavailable evidence, and inconclusive outcomes.
+          The original biological leakage auditor remains supported through the legacy report path.
         </p>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[0.8125rem]">
-          <Link href="/docs#results" className={LINK}>
-            Validation
+          <Link href="/docs#interpretation" className={LINK}>
+            Scientific claims
           </Link>
           <a href="https://github.com/shreyjain11/veritas" target="_blank" rel="noreferrer" className={LINK}>
             GitHub
           </a>
-          <Link href="/docs" className={LINK}>
-            Docs
+          <Link href="/report/legacy" className={LINK}>
+            Legacy bio viewer
           </Link>
         </div>
       </Reveal>

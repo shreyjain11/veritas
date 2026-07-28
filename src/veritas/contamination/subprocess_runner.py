@@ -10,7 +10,8 @@ as exceptions. Nothing here ever interprets file contents as a command.
 
 from __future__ import annotations
 
-import subprocess
+# Sole audited shell-free detector execution boundary.
+import subprocess  # nosec B404
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -57,7 +58,8 @@ def run_command(
         if "\x00" in arg:
             raise ValueError("argv arguments must not contain NUL bytes")
 
-    completed = subprocess.run(
+    # argv/NUL checked above; shell is always disabled.
+    completed = subprocess.run(  # nosec B603
         args,
         cwd=str(cwd),
         timeout=timeout,

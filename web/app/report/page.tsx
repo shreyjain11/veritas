@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
-import { Viewer } from "../../components/viewer/Viewer";
+import { V2Viewer } from "../../components/viewer/V2Viewer";
 
 export const metadata: Metadata = {
-  title: "Report viewer — Veritas",
+  title: "Benchmark integrity report viewer — Veritas",
   description:
-    "Render an AuditReport: the reported→honest collapse, leakage splits-matrix, stratification curves, provenance, and in-browser audit_hash verification.",
+    "Render a schema-v2 benchmark-integrity audit with evidence matrix, score robustness, limitations, and provenance.",
 };
 
 export default function ReportPage() {
-  return <Viewer />;
+  return <V2Viewer />;
 }

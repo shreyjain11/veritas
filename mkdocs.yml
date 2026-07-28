@@ -1,7 +1,7 @@
 site_name: Veritas
 site_description: >-
-  Model-agnostic, post-hoc leakage & robustness auditor for sequence-based
-  biological predictors.
+  Model-agnostic benchmark-integrity auditor for frontier-model evaluation
+  claims, with a preserved biological leakage domain.
 
 theme:
   name: material
@@ -21,6 +21,11 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Benchmark integrity specification: BENCHMARK_INTEGRITY_SPEC.md
+  - Open-weight models: open-weight-models.md
+  - Scientific claims: SCIENTIFIC_CLAIMS.md
+  - Threat model: THREAT_MODEL.md
+  - V1 to V2 migration: migration-v1-to-v2.md
   - Usage: usage.md
   - Detectors: detectors.md
   - Validation: validation.md

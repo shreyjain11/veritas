@@ -16,6 +16,13 @@ from typing import Any
 from pydantic import BaseModel
 
 from veritas.audit.runners import audit_from_files, audit_on_precomputed_graph, detect_from_files
+from veritas.benchmark_integrity.catalog import list_benchmarks
+from veritas.benchmark_integrity.reporting import render_json as render_v2_json
+from veritas.benchmark_integrity.service import audit as audit_v2
+from veritas.benchmark_integrity.service import (
+    inspect_audit,
+    load_spec,
+)
 from veritas.contracts import MetricName, SeqType
 from veritas.mcp.serialization import graph_to_dict, report_from_dict, report_to_dict
 from veritas.report import audit_hash_for
@@ -51,6 +58,19 @@ class _StratifyArgs(_RescoreArgs):
 
 class _ProvenanceArgs(BaseModel):
     report: Path
+
+
+class _V2AuditArgs(BaseModel):
+    config: Path
+    acknowledge_external_transfer: bool = False
+
+
+class _V2InspectArgs(BaseModel):
+    config: Path
+
+
+class _NoArgs(BaseModel):
+    pass
 
 
 def _run_audit(args: _AuditArgs) -> dict[str, Any]:
@@ -113,6 +133,28 @@ def _get_provenance(args: _ProvenanceArgs) -> dict[str, Any]:
     return provenance
 
 
+def _inspect_audit(args: _V2InspectArgs) -> dict[str, Any]:
+    return inspect_audit(load_spec(args.config))
+
+
+def _run_v2_audit(args: _V2AuditArgs) -> dict[str, Any]:
+    result: object = json.loads(
+        render_v2_json(
+            audit_v2(
+                load_spec(args.config),
+                acknowledge_external_transfer=args.acknowledge_external_transfer,
+            )
+        )
+    )
+    if not isinstance(result, dict):  # pragma: no cover - renderer always emits an object
+        raise ValueError("benchmark audit renderer returned non-object JSON")
+    return result
+
+
+def _list_benchmarks(args: _NoArgs) -> dict[str, Any]:
+    return {"benchmarks": list(list_benchmarks())}
+
+
 @dataclass(frozen=True)
 class ToolSpec:
     name: str
@@ -122,6 +164,24 @@ class ToolSpec:
 
 
 TOOL_SPECS: tuple[ToolSpec, ...] = (
+    ToolSpec(
+        "list_benchmarks",
+        "List built-in benchmark presets and their access/evaluator requirements.",
+        _NoArgs,
+        _list_benchmarks,
+    ),
+    ToolSpec(
+        "inspect_audit",
+        "Validate and estimate a benchmark-integrity audit.",
+        _V2InspectArgs,
+        _inspect_audit,
+    ),
+    ToolSpec(
+        "run_benchmark_audit",
+        "Run a schema-v2 benchmark-integrity audit.",
+        _V2AuditArgs,
+        _run_v2_audit,
+    ),
     ToolSpec(
         "detect_leakage",
         "Detect cross-set contamination; returns a graph.",
