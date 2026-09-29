@@ -21,7 +21,7 @@ const DESCRIPTION =
   "Check whether frontier models are benchmark maxxing. Veritas audits score robustness, protocol dependence, exposure-consistent signals, controls, uncertainty, and provenance.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://veritas-viewer.vercel.app"),
+  metadataBase: new URL("https://veritas.jainshrey.com"),
   title: "Veritas — frontier-model benchmark integrity auditor",
   description: DESCRIPTION,
   applicationName: "Veritas",
