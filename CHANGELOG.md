@@ -4,6 +4,40 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **v2 findings** — the perturbation finding was reported twice, and an audit with no
+  transformations crashed; each detector now runs exactly once.
+- **Verdicts need evidence** — "supports" requires a 95% interval above zero and a
+  Benjamini-Hochberg-corrected p ≤ 0.05; an interval below the 5-point equivalence margin
+  is evidence against; fewer than 10 paired items stays inconclusive. Previously any
+  positive gap, however small the sample, was reported as supporting evidence.
+- **Paired scoring** — the robustness gap is computed on truly paired items, and missing or
+  errored responses are excluded instead of being scored as wrong answers.
+- **Transformations** — choice permutation always moves the correct answer (it was often a
+  no-op); label remapping records the child's answer key in lineage; identifier renaming is
+  bijective (distinct variables were collapsed into one name).
+- **Answer parsing** — "The answer is B", "Answer: (B)", `**C**`, and restated option text
+  are understood; unparseable output is no longer coerced into a label.
+- **OpenAI-compatible adapter** — no longer sends an invalid `extra` field, honors the system
+  prompt, tolerates null content, retries transient errors, and fails fast on auth errors.
+- **Evidence matrix** — reports the strongest (not weakest) supporting strength and fills the
+  contradicting column.
+- **Replay reports** — no longer copy the whole replay table into every response.
+- `veritas gate` no longer crashes on schema-v2 reports.
+
+### Added
+
+- `audit_hash` covers the entire v2 report and is verifiable in Python (`veritas verify`,
+  MCP `verify_report`) and in the browser viewer.
+- Hosted runner: Anthropic, Google Gemini, xAI, Mistral, and DeepSeek providers; up to 50
+  items; output budgets and parameter handling for reasoning models; time-budgeted partial
+  results; the full interactive report in place after a run.
+- Viewer: integrity badge, drag-and-drop, a bundled sample report, item filters (flipped by a
+  variant / wrong / errors), per-variant correctness, and per-family breakdowns.
+
 ## [0.1.0] - 2026-07-27
 
 First public packaged release. Veritas v2 adds a model-agnostic benchmark-integrity

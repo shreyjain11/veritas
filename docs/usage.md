@@ -82,13 +82,24 @@ insufficient clean data (it never silently passes):
 veritas gate --report report.json --max-delta 0.05
 ```
 
+For a schema-v2 benchmark-integrity report the same command gates on the paired
+robustness gap (canonical minus validated-variant accuracy), and fails when no paired
+comparison exists.
+
+## Verify a report
+
+`veritas verify --report report.json` recomputes the `audit_hash` of a v1 or v2 report
+and exits 1 if the report was edited after it was signed. The web viewer runs the same
+check in the browser.
+
 ## Subcommands
 
 - `veritas audit` — full pipeline (detect → de-leak → re-score → stratify → report).
 - `veritas leakage` — detection only; writes the contamination graph.
 - `veritas rescore` — honest re-scoring from a precomputed graph.
 - `veritas stratify` — stratified metrics from a precomputed graph.
-- `veritas gate` — pass/fail a report against a max leakage delta.
+- `veritas gate` — pass/fail a report against a max leakage delta (v1) or robustness gap (v2).
+- `veritas verify` — recompute a report's `audit_hash` and flag tampering.
 
 See the [GitHub Action](#github-action) for a drop-in CI integration.
 

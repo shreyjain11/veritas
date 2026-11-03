@@ -34,7 +34,7 @@ export function Nav() {
           </svg>
           <span className="font-mono text-sm font-semibold tracking-tight text-fg">veritas</span>
         </Link>
-        <nav className="ml-auto flex items-center gap-5 text-[0.8125rem]">
+        <nav className="ml-auto flex items-center gap-3 whitespace-nowrap text-[0.8125rem] sm:gap-5">
           <Link href="/run" className="rounded-md border border-iris/35 bg-iris-dim px-3 py-1.5 font-mono text-iris-fg transition-colors hover:border-iris/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris">
             Run audit
           </Link>
@@ -46,7 +46,7 @@ export function Nav() {
             Docs
             <Underline />
           </Link>
-          <a href="https://github.com/shreyjain11/veritas" target="_blank" rel="noreferrer" className={LINK}>
+          <a href="https://github.com/shreyjain11/veritas" target="_blank" rel="noreferrer" className={`hidden sm:inline ${LINK}`}>
             GitHub
             <Underline />
           </a>

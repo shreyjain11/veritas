@@ -52,7 +52,8 @@ const SHORT_ESCAPES: Record<number, string> = {
   0x5c: "\\\\",
 };
 
-function formatString(s: string): string {
+/** Python json.dumps(ensure_ascii=True) string encoding. */
+export function formatString(s: string): string {
   let out = '"';
   for (let i = 0; i < s.length; i++) {
     const code = s.charCodeAt(i);

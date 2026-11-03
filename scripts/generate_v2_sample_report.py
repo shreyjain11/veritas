@@ -21,7 +21,7 @@ from veritas.benchmark_integrity.service import audit
 from veritas.benchmark_integrity.transforms import generate
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "web" / "fixtures" / "v2_sample_report.json"
+OUT = ROOT / "web" / "fixtures" / "v2" / "sample_report.json"
 SEED = 42
 N_ITEMS = 40
 # Items where the scripted model follows the original answer *letter* instead of content.
@@ -82,7 +82,7 @@ def _responses(items: list[BenchmarkItem]) -> dict[str, object]:
 def build() -> str:
     """Run the real pipeline from the repo root (relative paths keep it byte-reproducible)."""
     items = _items()
-    benchmark_path = Path("web/fixtures/.v2_sample_items.jsonl")
+    benchmark_path = Path("web/fixtures/v2/.sample_items.jsonl")
     benchmark_path.write_text(
         "".join(item.model_dump_json() + "\n" for item in items), encoding="utf-8"
     )

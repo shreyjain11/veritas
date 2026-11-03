@@ -38,10 +38,10 @@ export function Hero() {
               Run an audit in the browser →
             </Link>
             <Link
-              href="/report"
+              href="/report?sample"
               className={`rounded-sm text-[0.8125rem] text-secondary underline-offset-4 transition-colors hover:text-fg hover:underline ${FOCUS}`}
             >
-              Open a completed report
+              See a sample report (no key)
             </Link>
             <a
               href="#how"

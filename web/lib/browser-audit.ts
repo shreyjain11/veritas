@@ -1,5 +1,12 @@
+import { isReasoningModel } from "./audit-logic";
+
 export type BrowserProviderId =
   | "openai"
+  | "anthropic"
+  | "google"
+  | "xai"
+  | "mistral"
+  | "deepseek"
   | "together"
   | "fireworks"
   | "openrouter"
@@ -23,6 +30,7 @@ export type BrowserAuditRequest = {
   benchmark: BrowserBenchmarkId;
   itemCount: number;
   offset: number;
+  maxOutputTokens: number;
   acknowledgeExternalTransfer: boolean;
 };
 
@@ -40,8 +48,8 @@ export type BrowserBenchmarkItem = {
 
 export type BrowserModelResponse = {
   item_id: string;
-  request: { prompt: string };
-  normalized_request: { prompt: string };
+  request: { prompt: string; max_output_tokens: number };
+  normalized_request: { prompt: string; max_output_tokens: number };
   raw_text: string;
   parsed_answer: string | null;
   token_logprobs: null;
@@ -66,12 +74,12 @@ export type BrowserAuditReport = {
   };
   score: {
     reported_score: null;
-    canonical_reproduced_score: number;
-    robust_score: number;
+    canonical_reproduced_score: number | null;
+    robust_score: number | null;
     fresh_score: null;
-    robustness_gap: number;
+    robustness_gap: number | null;
     fresh_generalization_gap: null;
-    ci: null;
+    ci: [number, number] | null;
   };
   findings: Array<Record<string, unknown>>;
   evidence_matrix: Array<{
@@ -111,22 +119,34 @@ export type BrowserAuditReport = {
       adapter: "openai_compatible_byok";
       provider: BrowserProviderId;
       revision: null;
-      open_weight: boolean;
+      open_weight: boolean | null;
+      max_output_tokens: number;
     };
   };
 };
 
-export const BROWSER_PROVIDERS: ReadonlyArray<{
+export type BrowserProvider = {
   id: BrowserProviderId;
   name: string;
   description: string;
-}> = [
-  { id: "openai", name: "OpenAI", description: "OpenAI API key" },
-  { id: "together", name: "Together AI", description: "Hosted open-weight models" },
-  { id: "fireworks", name: "Fireworks AI", description: "Hosted open-weight models" },
-  { id: "openrouter", name: "OpenRouter", description: "Multi-provider model access" },
-  { id: "groq", name: "Groq", description: "Fast hosted open-weight inference" },
-  { id: "huggingface", name: "Hugging Face", description: "Inference Providers router" },
+  /** An example model ID; providers rename models, so the UI asks users to verify it. */
+  example: string;
+  /** Whether the provider serves open-weight checkpoints (null: depends on the model). */
+  openWeight: boolean | null;
+};
+
+export const BROWSER_PROVIDERS: ReadonlyArray<BrowserProvider> = [
+  { id: "openai", name: "OpenAI", description: "GPT and o-series models", example: "gpt-4o-mini", openWeight: false },
+  { id: "anthropic", name: "Anthropic", description: "Claude via the OpenAI-compatible endpoint", example: "claude-haiku-5-5", openWeight: false },
+  { id: "google", name: "Google Gemini", description: "Gemini via the OpenAI-compatible endpoint", example: "gemini-2.5-flash", openWeight: false },
+  { id: "xai", name: "xAI", description: "Grok models", example: "grok-3-mini", openWeight: false },
+  { id: "mistral", name: "Mistral", description: "Mistral La Plateforme", example: "mistral-small-latest", openWeight: null },
+  { id: "deepseek", name: "DeepSeek", description: "DeepSeek platform API", example: "deepseek-chat", openWeight: null },
+  { id: "together", name: "Together AI", description: "Hosted open-weight models", example: "meta-llama/Llama-3.3-70B-Instruct-Turbo", openWeight: true },
+  { id: "fireworks", name: "Fireworks AI", description: "Hosted open-weight models", example: "accounts/fireworks/models/llama-v3p3-70b-instruct", openWeight: true },
+  { id: "groq", name: "Groq", description: "Fast hosted open-weight inference", example: "llama-3.3-70b-versatile", openWeight: true },
+  { id: "openrouter", name: "OpenRouter", description: "Multi-provider model access", example: "openai/gpt-4o-mini", openWeight: null },
+  { id: "huggingface", name: "Hugging Face", description: "Inference Providers router", example: "meta-llama/Llama-3.1-8B-Instruct", openWeight: true },
 ];
 
 export const BROWSER_BENCHMARKS: ReadonlyArray<{
@@ -145,11 +165,18 @@ export const BROWSER_BENCHMARKS: ReadonlyArray<{
   { id: "boolq", name: "BoolQ", description: "Passage-grounded yes/no questions", split: "validation" },
 ];
 
-export const MAX_BROWSER_ITEMS = 20;
+export const MAX_BROWSER_ITEMS = 50;
 export const VARIANTS_PER_ITEM = 2;
+export const MAX_OUTPUT_TOKENS = 4096;
+export const OUTPUT_BUDGETS = [16, 64, 256, 1024, 4096] as const;
 
 export function requestCount(itemCount: number): number {
   return itemCount * (1 + VARIANTS_PER_ITEM);
+}
+
+/** Short answers need few tokens; reasoning models spend output tokens before answering. */
+export function defaultOutputTokens(model: string): number {
+  return isReasoningModel(model) ? 1024 : 16;
 }
 
 export function validateBrowserAuditRequest(value: unknown): BrowserAuditRequest {
@@ -157,16 +184,20 @@ export function validateBrowserAuditRequest(value: unknown): BrowserAuditRequest
   const raw = value as Record<string, unknown>;
   const provider = String(raw.provider ?? "") as BrowserProviderId;
   const benchmark = String(raw.benchmark ?? "") as BrowserBenchmarkId;
-  const apiKey = String(raw.apiKey ?? "");
+  const apiKey = String(raw.apiKey ?? "").trim();
   const model = String(raw.model ?? "").trim();
   const itemCount = Number(raw.itemCount);
   const offset = Number(raw.offset ?? 0);
+  const maxOutputTokens = raw.maxOutputTokens == null ? defaultOutputTokens(model) : Number(raw.maxOutputTokens);
   if (!BROWSER_PROVIDERS.some((entry) => entry.id === provider)) throw new Error("Unsupported provider.");
   if (!BROWSER_BENCHMARKS.some((entry) => entry.id === benchmark)) throw new Error("Unsupported benchmark.");
-  if (apiKey.length < 8 || apiKey.length > 512 || /[\r\n]/.test(apiKey)) throw new Error("API key is malformed.");
+  if (apiKey.length < 8 || apiKey.length > 512 || /[\s]/.test(apiKey)) throw new Error("API key is malformed (it should be one line with no spaces).");
   if (!model || model.length > 200 || /[\r\n]/.test(model)) throw new Error("Model ID is malformed.");
   if (!Number.isInteger(itemCount) || itemCount < 1 || itemCount > MAX_BROWSER_ITEMS) throw new Error(`Item count must be between 1 and ${MAX_BROWSER_ITEMS}.`);
   if (!Number.isInteger(offset) || offset < 0 || offset > 10000) throw new Error("Offset must be between 0 and 10000.");
+  if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > MAX_OUTPUT_TOKENS) {
+    throw new Error(`Output budget must be between 1 and ${MAX_OUTPUT_TOKENS} tokens.`);
+  }
   if (raw.acknowledgeExternalTransfer !== true) throw new Error("External benchmark transfer must be acknowledged.");
-  return { provider, benchmark, apiKey, model, itemCount, offset, acknowledgeExternalTransfer: true };
+  return { provider, benchmark, apiKey, model, itemCount, offset, maxOutputTokens, acknowledgeExternalTransfer: true };
 }

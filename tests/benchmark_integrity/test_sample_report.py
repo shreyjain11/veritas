@@ -12,7 +12,7 @@ from veritas.benchmark_integrity.contracts import AuditReport
 from veritas.benchmark_integrity.hashing import verify_report_hash
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = ROOT / "web" / "fixtures" / "v2_sample_report.json"
+FIXTURE = ROOT / "web" / "fixtures" / "v2" / "sample_report.json"
 
 
 def test_sample_report_is_valid_and_hash_verified() -> None:
@@ -31,6 +31,6 @@ def test_sample_report_regenerates_byte_identically(monkeypatch: pytest.MonkeyPa
     spec.loader.exec_module(module)
     monkeypatch.chdir(ROOT)
     assert module.build() == FIXTURE.read_text(encoding="utf-8"), (
-        "web/fixtures/v2_sample_report.json is stale: run "
+        "web/fixtures/v2/sample_report.json is stale: run "
         "`uv run python scripts/generate_v2_sample_report.py`"
     )

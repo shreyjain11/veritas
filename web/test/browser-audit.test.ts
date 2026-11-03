@@ -19,11 +19,11 @@ const valid = {
 describe("browser audit request boundary", () => {
   it("computes the canonical plus two transformed requests", () => {
     expect(requestCount(10)).toBe(30);
-    expect(requestCount(MAX_BROWSER_ITEMS)).toBe(60);
+    expect(requestCount(MAX_BROWSER_ITEMS)).toBe(MAX_BROWSER_ITEMS * 3);
   });
 
   it("accepts a bounded acknowledged request without changing the key", () => {
-    expect(validateBrowserAuditRequest(valid)).toEqual(valid);
+    expect(validateBrowserAuditRequest(valid)).toEqual({ ...valid, maxOutputTokens: 16 });
   });
 
   it.each([

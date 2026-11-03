@@ -1,5 +1,5 @@
 {
-  "audit_hash": "22ca1dfff0818bb4385aaecb985a2ab045a941d81b5fe9557cb79b6e875fd4fd",
+  "audit_hash": "1394a0877d3df97789c0706df968c65a1f5f2317d53a94fc987c51a87aac25b0",
   "benchmark": {
     "canonicalization": {},
     "id": "synthetic-arithmetic-demo",
@@ -1602,7 +1602,7 @@
     "Generated variants are reported separately by validation status; only validated variants enter the robust score."
   ],
   "provenance": {
-    "audit_spec_hash": "868776621b70fed6102b538e34fc43fe11a3b1ebdd57f43cc2ea9d1aba0ee0d9",
+    "audit_spec_hash": "a31cd9f52a5b04381d9ba067dab9b120ffa3ba889a31bdca17595a1b28f4d636",
     "benchmark_hash": "ef2451a5d8a05602acb26d46d45345cde6b0fd0b4c2bdd53f97f5394aed9a0ef",
     "cache_state": "disabled",
     "external_transfer_acknowledged": false,

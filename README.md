@@ -61,12 +61,16 @@ for `linux/amd64` (the platform the pinned binaries target).
 ## Benchmark-integrity quickstart
 
 For the fastest hosted path, open the browser audit console. Choose one of eight
-public multiple-choice benchmarks, select an allowlisted OpenAI-compatible provider,
-and paste your own provider API key for that run. The key is sent over HTTPS, used
-only in server request memory, cleared from the form, and excluded from caches,
-logs, cookies, browser storage, and report provenance by Veritas. Hosted runs are
-bounded to 20 parent items and 60 model requests; the UI shows the exact request
-count and requires acknowledgement before transferring benchmark prompts.
+public multiple-choice benchmarks, select an allowlisted provider (OpenAI, Anthropic,
+Google Gemini, xAI, Mistral, DeepSeek, Together, Fireworks, Groq, OpenRouter, or
+Hugging Face — all through their OpenAI-compatible endpoints), and paste your own
+provider API key for that run. The key is sent over HTTPS, used only in server
+request memory, cleared from the form, and excluded from caches, logs, cookies,
+browser storage, and report provenance by Veritas. Hosted runs are bounded to 50
+parent items (150 model requests) with an adjustable output budget for reasoning
+models; the UI shows the exact request count and requires acknowledgement before
+transferring benchmark prompts. Results render in place with item-level evidence,
+and no key is needed to [explore a sample report](https://veritas-viewer.vercel.app/report?sample).
 
 The full CLI remains the path for private datasets, local model runtimes, larger
 runs, resumable caching, and the complete detector suite.
@@ -80,6 +84,10 @@ veritas audit --config audit.json --out audit-run/
 ```
 
 The output package contains `report.json`, which opens in the schema-v2 report viewer.
+Every report is signed: `veritas verify --report audit-run/report.json` (or the
+viewer) recomputes the `audit_hash` over the whole report and flags any later edit, and
+`veritas gate --report audit-run/report.json --max-delta 0.05` fails CI when the
+paired robustness gap exceeds a threshold.
 For private benchmarks routed to an external endpoint, acknowledge the transfer explicitly:
 
 ```bash
