@@ -34,6 +34,7 @@ _EXPECTED_TOOLS = {
     "inspect_audit",
     "run_benchmark_audit",
     "list_benchmarks",
+    "verify_report",
 }
 
 
@@ -187,3 +188,16 @@ def test_bad_enum_arg_raises_validation_error(tmp_path: Path) -> None:
     args = _audit_args(tmp_path) | {"seq_type": "klingon"}  # not a SeqType
     with pytest.raises(ValidationError):
         call_tool("run_audit", args)
+
+
+def test_verify_report_tool_detects_v2_tampering(tmp_path: Path) -> None:
+    from tests.benchmark_integrity.test_service_logic import _spec
+    from veritas.benchmark_integrity.service import audit as audit_v2
+
+    report = json.loads(audit_v2(_spec(tmp_path)).model_dump_json())
+    path = tmp_path / "report.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+    assert call_tool("verify_report", {"report": str(path)})["verified"] is True
+    report["score"]["robust_score"] = 0.5
+    path.write_text(json.dumps(report), encoding="utf-8")
+    assert call_tool("verify_report", {"report": str(path)})["verified"] is False

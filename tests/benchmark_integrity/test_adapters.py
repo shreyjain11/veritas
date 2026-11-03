@@ -55,7 +55,11 @@ def test_multiple_choice_prompt_parser_and_label_remap() -> None:
     assert "a. wrong" in format_prompt(item)
     assert parse_answer(item, "B") == "b"
     derived = generate((item,), "choice_label_remap", 1, 42)[0]
-    assert derived.item.expected_output == "option_2"
+    new_labels = [choice.id for choice in derived.item.choices or ()]
+    assert {label.casefold() for label in new_labels}.isdisjoint({"a", "b"})
+    assert derived.item.expected_output == new_labels[1]  # "right" keeps its position
+    # lineage records the CHILD's answer key, which is what the variant is scored against
+    assert derived.transformation.expected_output == derived.item.expected_output
     assert derived.transformation.validation.value == "valid"
 
 

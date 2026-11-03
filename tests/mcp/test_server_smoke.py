@@ -31,6 +31,7 @@ _EXPECTED_TOOLS = {
     "inspect_audit",
     "run_benchmark_audit",
     "list_benchmarks",
+    "verify_report",
 }
 
 

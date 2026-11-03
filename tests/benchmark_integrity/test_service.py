@@ -36,7 +36,8 @@ def _spec(tmp_path: Path, *, visibility: str = "public") -> Path:
         "model": {
             "id": "fixture-model",
             "adapter": "replay",
-            "generation": {"extra": {"responses": {"q1": "b", "q1::choice-order::42": "b"}}},
+            # The permuted variant moves "4" to label a: a content-tracking model answers a.
+            "generation": {"extra": {"responses": {"q1": "b", "q1::choice-order::42": "a"}}},
         },
         "transformations": [{"type": "choice_permutation"}],
         "detectors": [{"type": "perturbation"}, {"type": "exact_match"}, {"type": "probability"}],
@@ -99,3 +100,52 @@ def test_cli_writes_cross_format_v2_audit_package(tmp_path: Path) -> None:
     assert json.loads((output / "report.json").read_text())["schema_version"] == "2.0"
     assert (output / "report.md").read_text().startswith("# Veritas benchmark-integrity")
     assert (output / "report.html").read_text().startswith("<!doctype html>")
+
+
+def test_cli_audit_prints_a_summary_and_verify_detects_tampering(tmp_path: Path) -> None:
+    output = tmp_path / "run"
+    runner = CliRunner()
+    result = runner.invoke(app, ["audit", "--config", str(_spec(tmp_path)), "--out", str(output)])
+    assert result.exit_code == 0, result.output
+    assert "canonical 100.0%" in result.output and "audit hash" in result.output
+    report = output / "report.json"
+    verified = runner.invoke(app, ["verify", "--report", str(report)])
+    assert verified.exit_code == 0 and "verified" in verified.output
+    data = json.loads(report.read_text())
+    data["score"]["canonical_reproduced_score"] = 0.5
+    report.write_text(json.dumps(data), encoding="utf-8")
+    tampered = runner.invoke(app, ["verify", "--report", str(report)])
+    assert tampered.exit_code == 1
+
+
+def test_cli_turns_configuration_errors_into_one_line(tmp_path: Path) -> None:
+    path = _spec(tmp_path)
+    raw = json.loads(path.read_text())
+    raw["detectors"] = [{"type": "not_a_detector"}]
+    path.write_text(json.dumps(raw), encoding="utf-8")
+    result = CliRunner().invoke(app, ["inspect", "--config", str(path)])
+    assert result.exit_code == 2
+    assert "unknown detector(s) not_a_detector" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_cli_lists_registered_detectors_and_adapters() -> None:
+    runner = CliRunner()
+    assert "template_dependence" in runner.invoke(app, ["detectors"]).output.split()
+    assert runner.invoke(app, ["adapters"]).output.split() == [
+        "replay",
+        "openai_compatible",
+        "vllm",
+        "huggingface_local",
+    ]
+
+
+def test_cli_gate_accepts_v2_reports(tmp_path: Path) -> None:
+    output = tmp_path / "run"
+    runner = CliRunner()
+    runner.invoke(app, ["audit", "--config", str(_spec(tmp_path)), "--out", str(output)])
+    result = runner.invoke(
+        app, ["gate", "--report", str(output / "report.json"), "--max-delta", "0.05"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "robustness gate passed" in result.output

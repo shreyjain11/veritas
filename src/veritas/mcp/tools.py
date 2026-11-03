@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from veritas.audit.runners import audit_from_files, audit_on_precomputed_graph, detect_from_files
 from veritas.benchmark_integrity.catalog import list_benchmarks
+from veritas.benchmark_integrity.hashing import verify_report_hash
 from veritas.benchmark_integrity.reporting import render_json as render_v2_json
 from veritas.benchmark_integrity.service import audit as audit_v2
 from veritas.benchmark_integrity.service import (
@@ -71,6 +72,10 @@ class _V2InspectArgs(BaseModel):
 
 class _NoArgs(BaseModel):
     pass
+
+
+class _VerifyArgs(BaseModel):
+    report: Path
 
 
 def _run_audit(args: _AuditArgs) -> dict[str, Any]:
@@ -151,6 +156,19 @@ def _run_v2_audit(args: _V2AuditArgs) -> dict[str, Any]:
     return result
 
 
+def _verify_report(args: _VerifyArgs) -> dict[str, Any]:
+    data: object = json.loads(args.report.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or "audit_hash" not in data:
+        raise ValueError("not a Veritas report: no audit_hash")
+    if data.get("schema_version") == "2.0":
+        ok, computed, stored = verify_report_hash(data)
+    else:
+        stored = str(data["audit_hash"])
+        computed = audit_hash_for(report_from_dict(data))
+        ok = computed == stored
+    return {"verified": ok, "stored": stored, "computed": computed}
+
+
 def _list_benchmarks(args: _NoArgs) -> dict[str, Any]:
     return {"benchmarks": list(list_benchmarks())}
 
@@ -193,6 +211,12 @@ TOOL_SPECS: tuple[ToolSpec, ...] = (
     ),
     ToolSpec("stratify", "Stratified robustness on a precomputed graph.", _StratifyArgs, _stratify),
     ToolSpec("run_audit", "Run the full audit pipeline; returns a report.", _AuditArgs, _run_audit),
+    ToolSpec(
+        "verify_report",
+        "Recompute a v1 or v2 report's audit_hash and say whether it was edited after signing.",
+        _VerifyArgs,
+        _verify_report,
+    ),
     ToolSpec(
         "get_provenance",
         "Return a report's provenance (hash-verified).",

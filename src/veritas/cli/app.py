@@ -7,8 +7,10 @@ precomputed contamination graph, no binary). All real work lives in veritas.audi
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 
@@ -16,6 +18,8 @@ from veritas.audit.gate import evaluate_gate
 from veritas.audit.io_helpers import write_report
 from veritas.audit.runners import audit_from_files, audit_on_precomputed_graph, detect_from_files
 from veritas.benchmark_integrity.catalog import CATALOG, list_benchmarks
+from veritas.benchmark_integrity.contracts import AuditReport
+from veritas.benchmark_integrity.hashing import verify_report_hash
 from veritas.benchmark_integrity.reporting import (
     render_html,
     render_markdown,
@@ -23,14 +27,18 @@ from veritas.benchmark_integrity.reporting import (
 from veritas.benchmark_integrity.reporting import (
     render_json as render_v2_json,
 )
-from veritas.benchmark_integrity.service import audit as audit_v2
 from veritas.benchmark_integrity.service import (
+    DETECTORS,
+    MODEL_ADAPTERS,
     inspect_audit,
     load_benchmark,
     load_spec,
 )
+from veritas.benchmark_integrity.service import audit as audit_v2
 from veritas.benchmark_integrity.transforms import generate
 from veritas.contracts import MetricName, SeqType
+from veritas.mcp.serialization import report_from_dict
+from veritas.report import audit_hash_for
 
 app = typer.Typer(
     help="Veritas: benchmark-integrity auditor. Legacy biological commands remain available."
@@ -50,6 +58,54 @@ _SeqType = Annotated[SeqType, typer.Option(help="sequence alphabet")]
 _Metric = Annotated[MetricName, typer.Option(help="headline metric")]
 _Fmt = Annotated[str, typer.Option("--format", help="json | md | html")]
 _Axis = Annotated[str, typer.Option(help="difficulty axis")]
+
+
+@contextmanager
+def _friendly_errors() -> Iterator[None]:
+    """Turn expected configuration/runtime failures into one line + exit code 2."""
+    try:
+        yield
+    except (ValueError, PermissionError, RuntimeError, FileNotFoundError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+
+def _pct(value: float | None, *, signed: bool = False) -> str:
+    if value is None:
+        return "unavailable"
+    return f"{value * 100:+.1f}%" if signed else f"{value * 100:.1f}%"
+
+
+def _write_v2_package(report: AuditReport, out: Path) -> None:
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "report.json").write_text(render_v2_json(report), encoding="utf-8")
+    (out / "report.md").write_text(render_markdown(report), encoding="utf-8")
+    (out / "report.html").write_text(render_html(report), encoding="utf-8")
+
+
+def _summarize(report: AuditReport, out: Path) -> None:
+    score = report.score
+    typer.echo(f"wrote {out / 'report.json'} (+ report.md, report.html)")
+    interval = (
+        f" [95% CI {_pct(score.ci[0], signed=True)} to {_pct(score.ci[1], signed=True)}]"
+        if score.ci
+        else ""
+    )
+    typer.echo(
+        f"canonical {_pct(score.canonical_reproduced_score)} · robust {_pct(score.robust_score)}"
+        f" · gap {_pct(score.robustness_gap, signed=True)}{interval}"
+    )
+    for finding in report.findings:
+        verdict = (
+            finding.status.value
+            if finding.status.value != "complete"
+            else f"{finding.direction.value} ({finding.strength.value})"
+        )
+        typer.echo(f"  {finding.detector_id:<22} {verdict}")
+    errors = sum(1 for response in report.responses if response.error)
+    if errors:
+        typer.echo(f"warning: {errors} request(s) failed and were excluded from scoring", err=True)
+    typer.echo(f"audit hash {report.audit_hash}")
 
 
 @app.command()
@@ -85,38 +141,53 @@ def audit(
         )
         write_report(legacy_report, out, fmt)
         return
-    spec = load_spec(config)
-    if dry_run:
-        typer.echo(json.dumps(inspect_audit(spec), indent=2, sort_keys=True))
-        return
-    v2_report = audit_v2(spec, acknowledge_external_transfer=acknowledge_external_transfer)
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(render_v2_json(v2_report), encoding="utf-8")
-    (out / "report.md").write_text(render_markdown(v2_report), encoding="utf-8")
-    (out / "report.html").write_text(render_html(v2_report), encoding="utf-8")
-    typer.echo(f"wrote {out / 'report.json'}")
+    with _friendly_errors():
+        spec = load_spec(config)
+        if dry_run:
+            typer.echo(json.dumps(inspect_audit(spec), indent=2, sort_keys=True))
+            return
+        v2_report = audit_v2(spec, acknowledge_external_transfer=acknowledge_external_transfer)
+    _write_v2_package(v2_report, out)
+    _summarize(v2_report, out)
 
 
 @app.command("inspect")
 def inspect(config: _Cfg) -> None:
     """Validate and estimate a v2 audit before it makes model requests."""
-    typer.echo(json.dumps(inspect_audit(load_spec(config)), indent=2, sort_keys=True))
+    with _friendly_errors():
+        typer.echo(json.dumps(inspect_audit(load_spec(config)), indent=2, sort_keys=True))
 
 
 @app.command("adapters")
 def adapters() -> None:
     """List built-in v2 model adapters."""
-    typer.echo("replay\nopenai_compatible\nvllm\nhuggingface_local")
+    typer.echo("\n".join(MODEL_ADAPTERS))
 
 
 @app.command("detectors")
 def detectors() -> None:
     """List currently available v2 detector families."""
-    typer.echo(
-        "exact_match\nperturbation\nprobability\nguided_completion\noption_order\n"
-        "template_dependence\nfresh_set\ntemporal\nerror_reproduction\ncross_model\n"
-        "evaluator_exploitation\nconsistency"
-    )
+    typer.echo("\n".join(DETECTORS))
+
+
+@app.command("verify")
+def verify(report: Annotated[Path, typer.Option(exists=True, help="report JSON")]) -> None:
+    """Recompute a report's audit_hash; exit 1 if the report was edited after signing."""
+    with _friendly_errors():
+        data: Any = json.loads(report.read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or "audit_hash" not in data:
+            raise ValueError(f"{report} is not a Veritas report (no audit_hash)")
+        if data.get("schema_version") == "2.0":
+            ok, computed, stored = verify_report_hash(data)
+        else:
+            stored = str(data["audit_hash"])
+            computed = audit_hash_for(report_from_dict(data))
+            ok = computed == stored
+    if ok:
+        typer.echo(f"verified: audit hash {stored} matches the report content")
+        return
+    typer.echo(f"MISMATCH: stored {stored}\n          computed {computed}", err=True)
+    raise typer.Exit(code=1)
 
 
 @app.command("benchmarks")
@@ -148,31 +219,32 @@ def evaluate(
     out: _Out,
     acknowledge_external_transfer: bool = False,
 ) -> None:
-    """Evaluate the canonical benchmark portion of a v2 audit specification."""
-    spec = load_spec(config)
-    report = audit_v2(spec, acknowledge_external_transfer=acknowledge_external_transfer)
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(render_v2_json(report), encoding="utf-8")
-    (out / "report.md").write_text(render_markdown(report), encoding="utf-8")
-    (out / "report.html").write_text(render_html(report), encoding="utf-8")
+    """Evaluate a v2 audit specification and write the full report package."""
+    with _friendly_errors():
+        report = audit_v2(
+            load_spec(config), acknowledge_external_transfer=acknowledge_external_transfer
+        )
+    _write_v2_package(report, out)
+    _summarize(report, out)
 
 
 @app.command("transform")
 def transform(config: _Cfg, out: _Out) -> None:
     """Generate reproducible transformed items and their lineage records."""
-    spec = load_spec(config)
-    benchmark = load_benchmark(spec.benchmark)
-    seed = int(spec.runtime.get("seed", 42))
-    derived = [
-        value
-        for transform_spec in spec.transformations
-        for value in generate(
-            benchmark.items,
-            transform_spec.type,
-            transform_spec.variants_per_item,
-            seed,
-        )
-    ]
+    with _friendly_errors():
+        spec = load_spec(config)
+        benchmark = load_benchmark(spec.benchmark)
+        seed = int(spec.runtime.get("seed", 42))
+        derived = [
+            value
+            for transform_spec in spec.transformations
+            for value in generate(
+                benchmark.items,
+                transform_spec.type,
+                transform_spec.variants_per_item,
+                seed,
+            )
+        ]
     out.write_text(
         json.dumps(
             [
@@ -199,9 +271,10 @@ def validate_transformations(config: _Cfg, out: _Out) -> None:
 @app.command("detect")
 def detect(config: _Cfg, out: _Out, acknowledge_external_transfer: bool = False) -> None:
     """Run configured v2 detectors and write their explicit findings."""
-    report = audit_v2(
-        load_spec(config), acknowledge_external_transfer=acknowledge_external_transfer
-    )
+    with _friendly_errors():
+        report = audit_v2(
+            load_spec(config), acknowledge_external_transfer=acknowledge_external_transfer
+        )
     out.write_text(
         json.dumps(
             [item.model_dump(mode="json") for item in report.findings], indent=2, sort_keys=True
@@ -223,7 +296,12 @@ def compare(
         if data.get("schema_version") != "2.0":
             raise typer.BadParameter(f"{path} is not a schema-v2 report")
         rows.append(
-            {"report": str(path), "benchmark": data["benchmark"]["id"], "score": data["score"]}
+            {
+                "report": str(path),
+                "benchmark": data["benchmark"]["id"],
+                "model": data.get("provenance", {}).get("model", {}).get("id"),
+                "score": data["score"],
+            }
         )
     out.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
