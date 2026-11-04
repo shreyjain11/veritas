@@ -114,3 +114,23 @@ describe("paired statistics and decisions", () => {
     }
   });
 });
+
+describe("parseAnswer is linear on adversarial model output (no ReDoS)", () => {
+  it.each([
+    ["answer" + " ".repeat(50_000) + "!"],
+    ["answer is" + " \t\n".repeat(20_000) + "("],
+    ["_".repeat(50_000) + "!"],
+    ["**".repeat(25_000) + "!"],
+    ["option ".repeat(10_000) + "!"],
+    ["The final answer ".repeat(5_000)],
+  ])("%#", (text) => {
+    const started = performance.now();
+    expect(parseAnswer(text, ABCD)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it("still reads multi-line statements", () => {
+    expect(parseAnswer("Let me think.\n\nThe answer is\n\t(C)", ABCD)).toBe("c");
+    expect(parseAnswer("Answer:\n**B**", ABCD)).toBe("b");
+  });
+});

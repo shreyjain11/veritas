@@ -104,3 +104,28 @@ def test_chat_messages_add_system_prompt_and_choices() -> None:
 def test_normalize_answer() -> None:
     assert normalize_answer("  Paris.\n") == "paris"
     assert normalize_answer("New   York") == "new york"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "answer" + " " * 50_000 + "!",
+        "answer is" + " \t\n" * 20_000 + "(",
+        "_" * 50_000 + "!",
+        "**" * 25_000 + "!",
+        "option " * 10_000 + "!",
+        "The final answer " * 5_000,
+    ],
+)
+def test_parse_answer_is_linear_on_adversarial_model_output(text: str) -> None:
+    """Model output is untrusted: the parser must never backtrack catastrophically (ReDoS)."""
+    import time
+
+    started = time.perf_counter()
+    assert parse_answer(ABCD, text) is None
+    assert time.perf_counter() - started < 0.5
+
+
+def test_parse_answer_handles_multiline_and_tabbed_statements() -> None:
+    assert parse_answer(ABCD, "Let me think.\n\nThe answer is\n\t(C)") == "c"
+    assert parse_answer(ABCD, "Answer:\n**B**") == "b"

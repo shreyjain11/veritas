@@ -18,16 +18,21 @@ TEMPLATES = ("default", "qa_block", "inline")
 # Bump when rendering changes so content-addressed caches never replay stale prompts.
 PROMPT_FORMAT_VERSION = "2"
 
-_LABEL = r"(?P<label>[A-Za-z0-9_]+)(?![A-Za-z0-9_])"
+# These patterns run on model output, so they must stay linear-time (no ReDoS). They are
+# applied to whitespace-collapsed text: every gap is at most ONE space, matched by " ?",
+# so no two quantifiers ever compete for the same run of characters. Labels start with an
+# alphanumeric so the leading-noise class (which includes "_") cannot overlap them.
+_LABEL = r"(?P<label>[A-Za-z0-9][A-Za-z0-9_]*)(?![A-Za-z0-9_])"
 _ANSWER_STATEMENT = re.compile(
-    r"\b(?:final\s+)?answer\b\s*(?:is|would\s+be|should\s+be|:|=|-|\u2013)?\s*"
-    r"(?:\*\*|__)?\s*(?:(?:option|choice|label)\s+)?[(\[]?\s*" + _LABEL,
+    r"\b(?:final )?answer\b ?(?:(?:is|would be|should be|:|=|-|\u2013) ?)?"
+    r"(?:(?:\*\*|__) ?)?(?:(?:option|choice|label) )?[(\[]? ?" + _LABEL,
     re.IGNORECASE,
 )
 _LEADING_LABEL = re.compile(
-    r"^[\s*_`\"'\u201c\u2018(\[]*(?:(?:option|choice)\s+)?" + _LABEL,
+    r"^[ *_`\"'\u201c\u2018(\[]*(?:(?:option|choice) )?" + _LABEL,
     re.IGNORECASE,
 )
+_WHITESPACE = re.compile(r"\s+")
 _EDGE_NOISE = " \t\r\n*_`\"'\u201c\u201d\u2018\u2019()[]{}<>.:;,!?"
 
 
@@ -101,20 +106,21 @@ def parse_answer(item: BenchmarkItem, text: str) -> str | None:
     if not item.choices:
         return stripped
     labels = {choice.id.casefold(): choice.id for choice in item.choices}
-    bare = stripped.strip(_EDGE_NOISE)
+    collapsed = _WHITESPACE.sub(" ", stripped)
+    bare = collapsed.strip(_EDGE_NOISE)
     if bare.casefold() in labels:
         return labels[bare.casefold()]
     # The *last* explicit answer statement wins ("A is tempting, but the answer is C").
-    for match in reversed(list(_ANSWER_STATEMENT.finditer(stripped))):
-        label = _label_at(match, stripped, labels)
+    for match in reversed(list(_ANSWER_STATEMENT.finditer(collapsed))):
+        label = _label_at(match, collapsed, labels)
         if label is not None:
             return label
-    leading = _LEADING_LABEL.match(stripped)
+    leading = _LEADING_LABEL.match(collapsed)
     if leading is not None:
-        label = _label_at(leading, stripped, labels)
+        label = _label_at(leading, collapsed, labels)
         if label is not None:
             return label
-    return _unique_choice_text(item, bare, stripped)
+    return _unique_choice_text(item, bare, collapsed)
 
 
 def _label_at(match: re.Match[str], text: str, labels: dict[str, str]) -> str | None:
@@ -122,7 +128,7 @@ def _label_at(match: re.Match[str], text: str, labels: dict[str, str]) -> str | 
     if token.casefold() not in labels:
         return None
     # "a" and "I" double as English words: "the answer is a tricky one" names no label.
-    if token in {"a", "I"} and re.match(r"\s+[A-Za-z]", text[match.end("label") :]):
+    if token in {"a", "I"} and re.match(r" [A-Za-z]", text[match.end("label") :]):
         return None
     return labels[token.casefold()]
 
@@ -130,17 +136,15 @@ def _label_at(match: re.Match[str], text: str, labels: dict[str, str]) -> str | 
 def _unique_choice_text(item: BenchmarkItem, bare: str, text: str) -> str | None:
     """Map a response that restates exactly one choice's text back to that choice."""
     folded = text.casefold()
-    exact = [c.id for c in item.choices or () if c.text.strip().casefold() == bare.casefold()]
+    options = [(c.id, _WHITESPACE.sub(" ", c.text).strip().casefold()) for c in item.choices or ()]
+    exact = [choice_id for choice_id, option in options if option == bare.casefold()]
     if len(exact) == 1:
         return exact[0]
     mentioned = [
-        choice.id
-        for choice in item.choices or ()
-        if len(choice.text.strip()) >= 2
-        and re.search(
-            rf"(?<![A-Za-z0-9_]){re.escape(choice.text.strip().casefold())}(?![A-Za-z0-9_])",
-            folded,
-        )
+        choice_id
+        for choice_id, option in options
+        if len(option) >= 2
+        and re.search(rf"(?<![A-Za-z0-9_]){re.escape(option)}(?![A-Za-z0-9_])", folded)
     ]
     return mentioned[0] if len(mentioned) == 1 else None
 

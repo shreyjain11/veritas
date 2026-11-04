@@ -54,12 +54,16 @@ export function permuteChoices(item: McqItem): { choices: Choice[]; expected: st
 // Answer parsing (port of veritas.benchmark_integrity.prompting.parse_answer)
 // ---------------------------------------------------------------------------------------
 
-const LABEL = String.raw`(?<label>[A-Za-z0-9_]+)(?![A-Za-z0-9_])`;
+// These patterns run on untrusted model output, so they must stay linear-time (no ReDoS).
+// They are applied to whitespace-collapsed text: every gap is at most ONE space, matched by
+// " ?", so no two quantifiers compete for the same characters. Labels start with an
+// alphanumeric so the leading-noise class (which includes "_") cannot overlap them.
+const LABEL = String.raw`(?<label>[A-Za-z0-9][A-Za-z0-9_]*)(?![A-Za-z0-9_])`;
 const ANSWER_STATEMENT = new RegExp(
-  String.raw`\b(?:final\s+)?answer\b\s*(?:is|would\s+be|should\s+be|:|=|-|–)?\s*(?:\*\*|__)?\s*(?:(?:option|choice|label)\s+)?[(\[]?\s*` + LABEL,
+  String.raw`\b(?:final )?answer\b ?(?:(?:is|would be|should be|:|=|-|–) ?)?(?:(?:\*\*|__) ?)?(?:(?:option|choice|label) )?[(\[]? ?` + LABEL,
   "gi",
 );
-const LEADING_LABEL = new RegExp(String.raw`^[\s*_\x60"'“‘(\[]*(?:(?:option|choice)\s+)?` + LABEL, "i");
+const LEADING_LABEL = new RegExp(String.raw`^[ *_\x60"'“‘(\[]*(?:(?:option|choice) )?` + LABEL, "i");
 const EDGE_NOISE = new Set(" \t\r\n*_`\"'“”‘’()[]{}<>.:;,!?");
 
 function stripEdges(text: string): string {
@@ -80,13 +84,13 @@ function labelAt(match: RegExpMatchArray, text: string, labels: Map<string, stri
   if (!label) return null;
   const end = (match.index ?? 0) + match[0].length;
   // "a" and "I" double as English words: "the answer is a tricky one" names no label.
-  if ((token === "a" || token === "I") && /^\s+[A-Za-z]/.test(text.slice(end))) return null;
+  if ((token === "a" || token === "I") && /^ [A-Za-z]/.test(text.slice(end))) return null;
   return label;
 }
 
 /** The declared choice id the response names, or null when it names none or several. */
 export function parseAnswer(text: string, choices: Choice[]): string | null {
-  const stripped = text.trim();
+  const stripped = text.trim().replace(/\s+/g, " ");
   const labels = new Map(choices.map((choice) => [choice.id.toLowerCase(), choice.id]));
   const bare = stripEdges(stripped);
   const direct = labels.get(bare.toLowerCase());
@@ -101,13 +105,13 @@ export function parseAnswer(text: string, choices: Choice[]): string | null {
     const label = labelAt(leading, stripped, labels);
     if (label) return label;
   }
-  const exact = choices.filter((choice) => choice.text.trim().toLowerCase() === bare.toLowerCase());
+  const options = choices.map((choice) => ({ id: choice.id, text: choice.text.replace(/\s+/g, " ").trim().toLowerCase() }));
+  const exact = options.filter((option) => option.text === bare.toLowerCase());
   if (exact.length === 1) return exact[0]!.id;
   const folded = stripped.toLowerCase();
-  const mentioned = choices.filter((choice) => {
-    const option = choice.text.trim().toLowerCase();
-    return option.length >= 2 && new RegExp(`(?<![A-Za-z0-9_])${escapeRegExp(option)}(?![A-Za-z0-9_])`).test(folded);
-  });
+  const mentioned = options.filter(
+    (option) => option.text.length >= 2 && new RegExp(`(?<![A-Za-z0-9_])${escapeRegExp(option.text)}(?![A-Za-z0-9_])`).test(folded),
+  );
   return mentioned.length === 1 ? mentioned[0]!.id : null;
 }
 

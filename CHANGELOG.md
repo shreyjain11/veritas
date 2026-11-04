@@ -20,13 +20,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no-op); label remapping records the child's answer key in lineage; identifier renaming is
   bijective (distinct variables were collapsed into one name).
 - **Answer parsing** — "The answer is B", "Answer: (B)", `**C**`, and restated option text
-  are understood; unparseable output is no longer coerced into a label.
+  are understood; unparseable output is no longer coerced into a label. Parsing is
+  linear-time, so adversarial model output cannot stall an audit.
 - **OpenAI-compatible adapter** — no longer sends an invalid `extra` field, honors the system
   prompt, tolerates null content, retries transient errors, and fails fast on auth errors.
 - **Evidence matrix** — reports the strongest (not weakest) supporting strength and fills the
   contradicting column.
 - **Replay reports** — no longer copy the whole replay table into every response.
 - `veritas gate` no longer crashes on schema-v2 reports.
+- **`mcp` extra** — capped at `mcp<2`: the 2.x SDK removed APIs the server relies on, so
+  `pip install veritas-leakage[mcp]` (and CI's installed-wheel job) pulled an incompatible
+  release.
+- **Determinism** — v2 scores use exactly rounded summation, so reports and their hashes
+  are byte-identical on Python 3.11, 3.12, and 3.13.
 
 ### Added
 

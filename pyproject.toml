@@ -46,7 +46,8 @@ dependencies = [
 
 [project.optional-dependencies]
 cli = ["typer>=0.12"]
-mcp = ["mcp>=1.0"]
+# The server targets the 1.x SDK; 2.x removed APIs it (and its tests) rely on.
+mcp = ["mcp>=1.0,<2"]
 docs = ["mkdocs-material>=9.5"]
 local-model = ["transformers>=4.48", "torch>=2.2"]
 benchmarks = ["datasets>=3.2"]

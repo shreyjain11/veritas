@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -353,7 +354,9 @@ class _Paired:
 
 
 def _mean(values: Sequence[float]) -> float:
-    return sum(values) / len(values)
+    # math.fsum is exactly rounded, so scores (and therefore audit hashes) are identical on
+    # every Python version; built-in sum() of floats changed its algorithm in 3.12.
+    return math.fsum(values) / len(values)
 
 
 class _Analysis:
@@ -605,13 +608,13 @@ class _Analysis:
                 "Adapter declared support but returned no log probabilities.",
                 assumptions=("Responses contain generated-token log probabilities.",),
             )
-        nll = [-sum(values) / len(values) for values in sequences]
+        nll = [-_mean(values) for values in sequences]
         return {
             "detector_id": "probability",
             "detector_version": "1",
             "hypothesis": hypothesis,
             "evidence_type": "mean generated-token negative log likelihood",
-            "statistic": sum(nll) / len(nll),
+            "statistic": _mean(nll),
             "direction": EvidenceDirection.INCONCLUSIVE,
             "strength": EvidenceStrength.INCONCLUSIVE,
             "calibration": "uncalibrated_without_matched_member/non-member_controls",
