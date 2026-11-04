@@ -15,7 +15,7 @@ export default function RunPage() {
     <>
       <Nav />
       <AuditRunner />
-      <div className="mx-auto max-w-[1180px] px-5 pb-10 sm:px-8">
+      <div className="mx-auto max-w-[1120px] px-5 pb-10 sm:px-8">
         <Footer />
       </div>
     </>

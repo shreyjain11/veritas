@@ -16,10 +16,11 @@ import {
   requestCount,
 } from "../../lib/browser-audit";
 import { parseV2Report, type V2Report } from "../../lib/v2-report";
+import { buttonClass } from "../ui";
 import { ReportView } from "../viewer/ReportView";
 
 const CONTROL =
-  "w-full rounded-md border border-line bg-base px-3 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-faint focus:border-iris/70 disabled:opacity-60";
+  "w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-faint focus:border-iris focus:ring-2 focus:ring-iris/20 disabled:opacity-60";
 const SETTINGS_KEY = "veritas.run.settings.v1";
 const CONCURRENCY = 6;
 
@@ -157,38 +158,26 @@ export function AuditRunner() {
   }
 
   return (
-    <main className="mx-auto max-w-[1180px] px-5 py-10 sm:px-8 sm:py-14">
-      <header className="grid gap-8 border-b border-hairline pb-10 lg:grid-cols-[1fr_360px] lg:items-end">
-        <div>
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-muted">browser audit console · bring your own key</p>
-          <h1 className="mt-3 max-w-3xl text-balance text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
-            Run a benchmark-integrity audit from the browser.
-          </h1>
-          <p className="mt-4 max-w-2xl text-pretty text-[0.9375rem] leading-relaxed text-secondary">
-            Pick a benchmark and a model. Veritas asks each question three ways — as published, with the
-            answer options moved, and in a different prompt template — then tests whether the score holds.
-          </p>
-          <p className="mt-3 text-sm text-muted">
-            No key handy?{" "}
-            <Link href="/report?sample" className="text-iris-fg underline-offset-4 hover:underline">
-              Explore a sample report
-            </Link>{" "}
-            first.
-          </p>
-        </div>
-        <div className="rounded-lg border border-iris/25 bg-iris-dim/30 p-4">
-          <p className="font-mono text-xs text-iris-fg">Your key stays ephemeral</p>
-          <p className="mt-2 text-xs leading-relaxed text-secondary">
-            It is sent once over HTTPS, used in server memory for this audit, cleared from the form,
-            and never stored in the report, cache, logs, cookies, or browser storage by Veritas.
-          </p>
-        </div>
+    <main className="mx-auto max-w-[1120px] px-5 py-10 sm:px-8 sm:py-14">
+      <header className="max-w-3xl">
+        <h1 className="font-display text-[2.5rem] leading-tight font-medium tracking-[-0.015em] text-fg">Run an audit</h1>
+        <p className="mt-4 text-[1.0625rem] leading-relaxed text-pretty text-secondary">
+          Pick a benchmark and a model. Veritas asks each question three ways (as published, with the
+          options moved, and in a different template) and tests whether the score holds.
+        </p>
+        <p className="mt-3 text-sm text-muted">
+          No key handy?{" "}
+          <Link href="/report?sample" className="font-medium text-iris-fg underline-offset-4 hover:underline">
+            Explore a sample report
+          </Link>{" "}
+          first.
+        </p>
       </header>
 
-      <div className="grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <form onSubmit={submit} className="rounded-xl border border-line bg-surface/20 p-5 sm:p-7">
-          <SectionTitle step="01" title="Model" aside="OpenAI-compatible" />
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <form onSubmit={submit} className="rounded-xl border border-line bg-surface p-5 sm:p-7">
+          <SectionTitle title="Model" />
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-xs text-secondary">Provider</span>
               <select value={settings.provider} onChange={(event) => update("provider", event.target.value as BrowserProviderId)} className={CONTROL} disabled={running}>
@@ -215,13 +204,13 @@ export function AuditRunner() {
           <label className="mt-5 block">
             <span className="mb-2 flex items-center justify-between gap-3 text-xs text-secondary">
               API key
-              <span className="font-mono text-[0.625rem] text-iris-fg">used once · never stored</span>
+              <span className="text-[0.6875rem] text-muted">used once, never stored</span>
             </span>
             <input value={apiKey} onChange={(event) => setApiKey(event.target.value)} className={CONTROL} type="password" placeholder={`Paste your ${provider.name} key for this run`} autoComplete="off" spellCheck={false} required disabled={running} />
           </label>
 
-          <SectionTitle step="02" title="Benchmark window" aside="public multiple-choice" className="mt-9" />
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          <SectionTitle title="Benchmark" className="mt-10" />
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <label className="block sm:col-span-2">
               <span className="mb-2 block text-xs text-secondary">Benchmark</span>
               <select value={settings.benchmark} onChange={(event) => update("benchmark", event.target.value as BrowserBenchmarkId)} className={CONTROL} disabled={running}>
@@ -257,7 +246,7 @@ export function AuditRunner() {
             </label>
           </div>
 
-          <label className="mt-7 flex cursor-pointer items-start gap-3 rounded-lg border border-warn/25 bg-warn-dim/20 p-4">
+          <label className="mt-8 flex cursor-pointer items-start gap-3 rounded-lg border border-line bg-subtle p-4">
             <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} className="mt-0.5 size-4 accent-[var(--color-iris)]" required disabled={running} />
             <span className="text-xs leading-relaxed text-secondary">
               I understand that {requests} benchmark prompts will be sent to {provider.name}, may incur
@@ -267,11 +256,11 @@ export function AuditRunner() {
           </label>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button type="submit" disabled={running} className="rounded-md border border-iris/50 bg-iris-dim px-4 py-2.5 font-mono text-sm text-iris-fg transition-colors hover:border-iris disabled:cursor-not-allowed disabled:opacity-50">
-              {running ? `Running… ${clock(elapsed)}` : `Run ${requests} requests →`}
+            <button type="submit" disabled={running} className={buttonClass("primary", "px-5 py-2.5")}>
+              {running ? `Running… ${clock(elapsed)}` : `Run ${requests} requests`}
             </button>
             {running && (
-              <button type="button" onClick={() => abortRef.current?.abort()} className="rounded-md px-3 py-2 text-sm text-secondary hover:text-fg">
+              <button type="button" onClick={() => abortRef.current?.abort()} className={buttonClass("ghost")}>
                 Cancel
               </button>
             )}
@@ -292,27 +281,38 @@ export function AuditRunner() {
           </div>
         </form>
 
-        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          <SummaryCard label="Requests" value={String(requests)} body={`${settings.itemCount} original + ${settings.itemCount * 2} variants (options moved, new template)`} />
-          <SummaryCard label="Output cap" value={`${(requests * budget).toLocaleString()} tokens`} body={`${budget} per request. Input tokens and pricing vary by model.`} />
-          <SummaryCard label="Evidence" value="3 paired tests" body="Surface-form dependence, answer-position dependence, and template dependence, with 95% intervals and corrected p-values." />
-          <div className="rounded-lg border border-line p-4 text-xs leading-relaxed text-muted">
-            Need private data, local models, caching, or thousands of items? Use the{" "}
-            <Link href="/docs" className="text-iris-fg underline-offset-4 hover:underline">CLI</Link>.
-            Hosted runs never claim proven training membership.
+        <aside className="space-y-5 lg:sticky lg:top-20 lg:self-start">
+          <div className="rounded-xl border border-line bg-surface">
+            <h2 className="border-b border-hairline px-5 py-3 text-sm font-semibold text-fg">This run</h2>
+            <dl className="divide-y divide-hairline text-sm">
+              <SummaryRow label="Requests" value={String(requests)} note={`${settings.itemCount} original, ${settings.itemCount * 2} variants`} />
+              <SummaryRow label="Output cap" value={`${(requests * budget).toLocaleString()} tokens`} note={`${budget} per request; pricing varies by model`} />
+              <SummaryRow label="Tests" value="3 paired" note="answer position, template, and both combined" />
+            </dl>
           </div>
+          <div className="rounded-xl border border-line px-5 py-4 text-[0.8125rem] leading-relaxed text-secondary">
+            <p className="font-medium text-fg">Your key stays ephemeral</p>
+            <p className="mt-1.5">
+              Sent once over HTTPS, used in server memory for this run, then cleared. It is never
+              stored in the report, logs, cookies, or browser storage.
+            </p>
+          </div>
+          <p className="px-1 text-[0.8125rem] leading-relaxed text-muted">
+            Private data, local models, or thousands of items? Use the{" "}
+            <Link href="/docs#run" className="font-medium text-iris-fg underline-offset-4 hover:underline">CLI</Link>.
+          </p>
         </aside>
       </div>
 
       {view && report && (
         <section ref={resultRef} className="scroll-mt-20 border-t border-hairline py-12">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <p className="font-mono text-xs text-iris-fg">03 / results</p>
+            <h2 className="font-display text-2xl font-medium text-fg">Results</h2>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={download} className="rounded-md border border-iris/50 bg-iris-dim px-4 py-2 font-mono text-sm text-iris-fg hover:border-iris">
+              <button type="button" onClick={download} className={buttonClass("primary")}>
                 Download report.json
               </button>
-              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="rounded-md border border-line px-4 py-2 text-sm text-secondary hover:border-edge hover:text-fg">
+              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className={buttonClass("secondary")}>
                 Run another
               </button>
             </div>
@@ -324,24 +324,18 @@ export function AuditRunner() {
   );
 }
 
-function SectionTitle({ step, title, aside, className = "" }: { step: string; title: string; aside: string; className?: string }) {
-  return (
-    <div className={`flex items-center justify-between gap-4 border-b border-hairline pb-5 ${className}`}>
-      <div>
-        <p className="font-mono text-xs text-iris-fg">{step} / configure</p>
-        <h2 className="mt-1 text-lg text-fg">{title}</h2>
-      </div>
-      <span className="rounded-full border border-line px-2.5 py-1 font-mono text-[0.625rem] text-muted">{aside}</span>
-    </div>
-  );
+function SectionTitle({ title, className = "" }: { title: string; className?: string }) {
+  return <h2 className={`border-b border-hairline pb-3 text-base font-semibold text-fg ${className}`}>{title}</h2>;
 }
 
-function SummaryCard({ label, value, body }: { label: string; value: string; body: string }) {
+function SummaryRow({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="rounded-lg border border-line bg-surface/20 p-4">
-      <p className="font-mono text-[0.625rem] uppercase tracking-[0.08em] text-muted">{label}</p>
-      <p className="tnum mt-2 font-mono text-xl text-fg">{value}</p>
-      <p className="mt-2 text-xs leading-relaxed text-secondary">{body}</p>
+    <div className="px-5 py-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <dt className="text-secondary">{label}</dt>
+        <dd className="tnum font-mono text-fg">{value}</dd>
+      </div>
+      <p className="mt-0.5 text-xs text-muted">{note}</p>
     </div>
   );
 }

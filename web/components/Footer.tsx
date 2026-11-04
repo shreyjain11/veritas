@@ -1,26 +1,20 @@
 import Link from "next/link";
 
-const LINK =
-  "rounded-sm text-secondary underline-offset-4 transition-colors hover:text-fg hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris";
+import { FOCUS_RING } from "./ui";
+
+const LINK = `rounded-sm text-secondary transition-colors hover:text-fg ${FOCUS_RING}`;
 
 export function Footer() {
   return (
-    <footer className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-hairline pt-5 text-[0.75rem] text-muted">
-      <span className="font-mono text-secondary">veritas</span>
-      <span className="text-faint">benchmark integrity for frontier-model evaluation</span>
-      <nav className="ml-auto flex gap-4">
-        <Link href="/run" className={LINK}>
-          Run audit
-        </Link>
-        <Link href="/" className={LINK}>
-          Overview
-        </Link>
-        <Link href="/report" className={LINK}>
-          Report viewer
-        </Link>
-        <Link href="/docs" className={LINK}>
-          Docs
-        </Link>
+    <footer className="mt-16 flex flex-col gap-4 border-t border-hairline pt-6 pb-2 text-[0.8125rem] text-muted sm:flex-row sm:items-center">
+      <p>
+        <span className="font-medium text-fg">Veritas</span> · benchmark integrity for model evaluation · MIT
+      </p>
+      <nav className="flex flex-wrap gap-x-5 gap-y-2 sm:ml-auto">
+        <Link href="/run" className={LINK}>Run audit</Link>
+        <Link href="/report" className={LINK}>Reports</Link>
+        <Link href="/docs" className={LINK}>Docs</Link>
+        <Link href="/report/legacy" className={LINK}>Legacy viewer</Link>
         <a href="https://github.com/shreyjain11/veritas" target="_blank" rel="noreferrer" className={LINK}>
           GitHub
         </a>

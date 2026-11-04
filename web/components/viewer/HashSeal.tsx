@@ -33,7 +33,7 @@ export function HashSeal({ auditHash, state }: { auditHash: string; state: Verif
         <Icon status={status} />
         <span
           className={cn(
-            "font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em]",
+            "text-[0.8125rem] font-medium",
             status === "verifying" && "text-muted",
             status === "verified" && "text-iris-fg",
             status === "mismatch" && "text-danger-fg",
@@ -67,7 +67,7 @@ export function HashSealChip({ state }: { state: VerifyState }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.625rem] uppercase tracking-[0.06em]",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
         status === "verifying" && "border-line bg-elevated text-muted",
         status === "verified" && "border-iris/40 bg-iris-dim text-iris-fg",
         status === "mismatch" && "border-danger/50 bg-danger-dim text-danger-fg",

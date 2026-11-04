@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { parseV2Report, type V2Report } from "../../lib/v2-report";
+import { buttonClass } from "../ui";
 import { ReportView } from "./ReportView";
 
 const MAX_BYTES = 64 * 1024 * 1024;
@@ -61,7 +62,7 @@ export function V2Viewer() {
 
   return (
     <main
-      className="mx-auto max-w-[1240px] px-5 py-10 sm:px-8"
+      className="mx-auto max-w-[1120px] px-5 py-10 sm:px-8"
       onDragOver={(event) => {
         event.preventDefault();
         setDragging(true);
@@ -76,18 +77,17 @@ export function V2Viewer() {
         if (file) void loadFile(file);
       }}
     >
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-6">
-        <div>
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-muted">report viewer · schema v2</p>
-          {source && <p className="mt-1 break-all font-mono text-xs text-secondary">{source}</p>}
-        </div>
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-5">
+        <p className="min-w-0 truncate text-sm text-muted">
+          {source ? <>Viewing <span className="font-medium text-fg">{source}</span></> : "Report viewer"}
+        </p>
         <div className="flex flex-wrap items-center gap-2">
           {report && (
-            <button type="button" onClick={() => void loadSample()} className="rounded-md px-3 py-2 text-sm text-secondary hover:text-fg">
+            <button type="button" onClick={() => void loadSample()} className={buttonClass("ghost")}>
               Sample
             </button>
           )}
-          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-md border border-iris/40 bg-iris-dim px-4 py-2 font-mono text-sm text-iris-fg transition-colors hover:border-iris/70">
+          <button type="button" onClick={() => inputRef.current?.click()} className={buttonClass(report ? "secondary" : "primary")}>
             {report ? "Open another" : "Open report.json"}
           </button>
           <input
@@ -128,27 +128,27 @@ export function V2Viewer() {
 function EmptyState({ dragging, choose, sample }: { dragging: boolean; choose: () => void; sample: () => void }) {
   return (
     <section className="py-14">
-      <h1 className="text-3xl font-semibold tracking-tight text-fg">Open a benchmark-integrity audit.</h1>
+      <h1 className="font-display text-[2.5rem] leading-tight font-medium tracking-[-0.015em] text-fg">Open an audit report</h1>
       <p className="mt-3 max-w-2xl text-secondary">
         Inspect scores, verdicts, and every prompt, response, and variant. Reports are read locally in
         your browser and never uploaded; the audit hash is re-verified on open.
       </p>
       <div
-        className={`mt-8 grid place-items-center rounded-xl border-2 border-dashed px-6 py-14 text-center transition-colors ${dragging ? "border-iris bg-iris-dim/30" : "border-line"}`}
+        className={`mt-8 grid place-items-center rounded-xl border-2 border-dashed px-6 py-14 text-center transition-colors ${dragging ? "border-iris bg-iris-dim/40" : "border-line bg-surface"}`}
       >
         <p className="text-fg">Drop a <span className="font-mono">report.json</span> here</p>
         <p className="mt-1 text-sm text-muted">from <span className="font-mono">veritas audit</span> or a browser run</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <button type="button" onClick={choose} className="rounded-md border border-iris/40 bg-iris-dim px-4 py-2 font-mono text-sm text-iris-fg hover:border-iris/70">
+          <button type="button" onClick={choose} className={buttonClass("primary")}>
             Choose a file
           </button>
-          <button type="button" onClick={sample} className="rounded-md border border-line px-4 py-2 text-sm text-secondary hover:border-edge hover:text-fg">
+          <button type="button" onClick={sample} className={buttonClass("secondary")}>
             Explore the sample report
           </button>
         </div>
       </div>
       <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-        <Link className="text-iris-fg underline-offset-4 hover:underline" href="/run">Run a new audit →</Link>
+        <Link className="font-medium text-iris-fg underline-offset-4 hover:underline" href="/run">Run a new audit →</Link>
         <Link className="text-secondary underline-offset-4 hover:text-fg hover:underline" href="/report/legacy">Legacy biological reports →</Link>
       </div>
     </section>

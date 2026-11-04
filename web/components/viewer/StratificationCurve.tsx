@@ -26,10 +26,13 @@ function useWidth(): [React.RefObject<HTMLDivElement | null>, number] {
   return [ref, width];
 }
 
-const AXIS_COLOR = "#80889a"; // --color-faint (WCAG-AA on the panel surface)
-const GRID_COLOR = "#1c222a"; // --color-hairline (decorative gridline)
-const IRIS = "#9aa2f7";
-const DANGER = "#ff9592";
+// Theme tokens, so the chart follows light and dark mode.
+const AXIS_COLOR = "var(--color-faint)";
+const GRID_COLOR = "var(--color-hairline)";
+const IRIS = "var(--color-iris-fg)";
+const DANGER = "var(--color-danger-fg)";
+const LABEL_COLOR = "var(--color-fg)";
+const TICK_LABEL_COLOR = "var(--color-secondary)";
 
 function cleanAxis(name: string): string {
   return name.replace(/^metadata:/, "").replace(/_/g, " ");
@@ -112,7 +115,7 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
                       textAnchor="middle"
                       fontFamily="var(--font-mono)"
                       fontSize={11}
-                      fill={flagged ? DANGER : "#e8eaed"}
+                      fill={flagged ? DANGER : LABEL_COLOR}
                     >
                       {fmtMetric(s.metric.value)}
                     </text>
@@ -144,7 +147,7 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
                 top={ih}
                 stroke={AXIS_COLOR}
                 tickStroke={AXIS_COLOR}
-                tickLabelProps={{ fill: "#9ca4ae", fontSize: 11, fontFamily: "var(--font-mono)", textAnchor: "middle", dy: 4 }}
+                tickLabelProps={{ fill: TICK_LABEL_COLOR, fontSize: 11, fontFamily: "var(--font-mono)", textAnchor: "middle", dy: 4 }}
               />
               {strata.map((s) => (
                 <text
@@ -165,7 +168,9 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
       </div>
 
       {/* Accessible mirror of the SVG: screen readers read the points as a data table. */}
-      <table className="sr-only">
+      {/* sr-only on a wrapper: overflow:hidden does not reliably clip a <table> box */}
+      <div className="sr-only">
+      <table>
         <caption>
           {strata[0]?.metric.name} performance by {cleanAxis(strata[0]?.axis_name ?? "")}
         </caption>
@@ -190,6 +195,7 @@ export function StratificationCurve({ report }: { report: AuditReport }) {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   );
 }
