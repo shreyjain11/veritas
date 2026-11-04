@@ -11,7 +11,7 @@ export function TamperBanner({ auditHash, result }: { auditHash: string; result:
     >
       <div className="flex items-center gap-2">
         <ShieldAlert className="size-4 text-danger-fg" aria-hidden />
-        <h3 className="font-mono text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-danger-fg">
+        <h3 className="text-sm font-semibold text-danger-fg">
           audit_hash mismatch — possible tampering
         </h3>
       </div>

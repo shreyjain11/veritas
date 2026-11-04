@@ -30,17 +30,14 @@ export function Toc({ items }: { items: TocItem[] }) {
   }, [items]);
 
   return (
-    <nav aria-label="On this page" className="flex flex-col gap-0.5 text-[0.8125rem]">
-      <span className="mb-1 px-3 text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-faint">
-        On this page
-      </span>
+    <nav aria-label="On this page" className="flex flex-col gap-0.5 border-l border-line text-sm">
       {items.map((it) => (
         <a
           key={it.id}
           href={`#${it.id}`}
           className={cn(
-            "rounded-sm px-3 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
-            active === it.id ? "font-medium text-iris-fg" : "text-muted hover:text-fg",
+            "-ml-px border-l-2 py-1 pl-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris",
+            active === it.id ? "border-fg font-medium text-fg" : "border-transparent text-muted hover:text-fg",
           )}
         >
           {it.label}

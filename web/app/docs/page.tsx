@@ -5,167 +5,246 @@ import type { ReactNode } from "react";
 import { Footer } from "../../components/Footer";
 import { Toc, type TocItem } from "../../components/docs/Toc";
 import { Nav } from "../../components/landing/Nav";
+import { FOCUS_RING } from "../../components/ui";
 
 export const metadata: Metadata = {
-  title: "Benchmark integrity docs — Veritas",
+  title: "Docs — Veritas",
   description:
-    "Run and interpret Veritas schema-v2 audits of frontier and open-weight model benchmark performance.",
+    "Install Veritas, run a benchmark-integrity audit, and read its verdicts, intervals, and signed report.",
 };
 
 const TOC: TocItem[] = [
   { id: "overview", label: "Overview" },
-  { id: "workflow", label: "Workflow" },
-  { id: "evidence", label: "Evidence" },
-  { id: "statistics", label: "Statistics" },
   { id: "install", label: "Install" },
   { id: "run", label: "Run an audit" },
-  { id: "privacy", label: "Privacy" },
+  { id: "browser", label: "Browser runner" },
+  { id: "transformations", label: "What gets changed" },
+  { id: "decisions", label: "How verdicts are decided" },
+  { id: "verify", label: "Verify and gate" },
+  { id: "privacy", label: "Private benchmarks" },
   { id: "interpretation", label: "Interpretation" },
   { id: "legacy", label: "Legacy biology" },
 ];
 
 function H2({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <h2 id={id} className="mt-12 scroll-mt-20 text-xl font-semibold tracking-tight text-fg first:mt-0">
+    <h2 id={id} className="mt-14 scroll-mt-20 font-display text-2xl font-medium tracking-[-0.01em] text-fg">
       {children}
     </h2>
   );
 }
 
 function P({ children }: { children: ReactNode }) {
-  return <p className="mt-3 text-[0.9375rem] leading-relaxed text-secondary">{children}</p>;
+  return <p className="mt-4 text-[0.9375rem] leading-[1.7] text-secondary">{children}</p>;
 }
 
 function C({ children }: { children: ReactNode }) {
-  return <code className="rounded bg-elevated px-1 py-0.5 font-mono text-[0.85em] text-iris-fg">{children}</code>;
+  return <code className="rounded bg-elevated px-1.5 py-0.5 font-mono text-[0.85em] text-fg [overflow-wrap:anywhere]">{children}</code>;
 }
 
 function Code({ children }: { children: string }) {
   return (
-    <pre className="mt-4 overflow-x-auto rounded-md border border-hairline bg-subtle px-4 py-3 font-mono text-[0.8125rem] leading-relaxed text-secondary">
+    <pre className="mt-4 overflow-x-auto rounded-lg border border-hairline bg-surface px-4 py-3.5 font-mono text-[0.8125rem] leading-relaxed text-fg">
       {children}
     </pre>
   );
 }
 
-const DOC_LINK =
-  "text-iris-fg underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris";
+const LINK = `font-medium text-iris-fg underline-offset-4 hover:underline ${FOCUS_RING}`;
+
+const TRANSFORMS: Array<[string, string, string]> = [
+  ["choice_permutation", "Option texts move under the same labels, so the correct answer changes letter.", "valid"],
+  ["choice_label_remap", "Labels become a fresh scheme (a, b, c → 1, 2, 3 or unused letters).", "valid"],
+  ["formatting", "The prompt template and whitespace change; question and options do not.", "valid"],
+  ["identifier", "Placeholder names are renamed consistently (x → beta, y → gamma).", "uncertain"],
+];
 
 export default function DocsPage() {
   return (
     <>
       <Nav />
-      <div className="mx-auto max-w-[1100px] px-5 py-10 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1fr_220px]">
-          <article className="order-2 max-w-[680px] lg:order-1">
-            <p className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted">documentation · schema v2</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-fg">Auditing benchmark integrity</h1>
+      <div className="mx-auto max-w-[1120px] px-5 py-12 sm:px-8">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[200px_minmax(0,1fr)]">
+          <aside className="hidden lg:block">
+            <div className="sticky top-24">
+              <Toc items={TOC} />
+            </div>
+          </aside>
+
+          <article className="min-w-0 max-w-[700px]">
+            <h1 className="font-display text-[2.5rem] leading-tight font-medium tracking-[-0.015em] text-fg">
+              Documentation
+            </h1>
+            <p className="mt-4 text-[1.0625rem] leading-relaxed text-secondary">
+              How to run an audit, what Veritas changes about each question, and how to read the
+              verdicts it reports.
+            </p>
 
             <H2 id="overview">Overview</H2>
             <P>
-              Veritas checks whether a model&apos;s reported benchmark performance transfers beyond the
-              exact evaluation protocol. It records prompts and responses, runs reproducible
-              transformations and controls, computes paired uncertainty, and packages the evidence
-              with provenance and a deterministic audit hash.
+              Veritas checks whether a model&apos;s benchmark performance survives changes that should
+              not matter: moving the answer options, renaming their labels, rewriting the prompt
+              template. It records every prompt and response, scores each item against its own
+              variants, and writes a signed evidence package in JSON, Markdown, and HTML.
             </P>
-
-            <H2 id="workflow">Workflow</H2>
-            <Code>{`audit specification
-  → validate benchmark + privacy choices
-  → inspect request, token, and cost limits
-  → evaluate canonical items
-  → generate and validate transformed items
-  → run available detectors and controls
-  → compute paired statistics
-  → write JSON + Markdown + HTML evidence package`}</Code>
             <P>
-              Model adapters support replay, mock responses, OpenAI-compatible HTTP endpoints,
-              vLLM-compatible servers, local Hugging Face Transformers, and custom subprocesses.
-              Content-addressed caching makes interrupted runs resumable and includes model and
-              generation settings in every cache key.
-            </P>
-
-            <H2 id="evidence">Evidence, not a verdict</H2>
-            <P>
-              Findings distinguish exact or near-reference exposure, semantic exposure, template
-              and protocol dependence, choice or position sensitivity, evaluator exploitation,
-              distribution shift, fresh-set transfer, legitimate capability, and inconclusive or
-              unavailable evidence. Every detector declares its requirements and emits <C>not_run</C>
-              when those requirements are absent.
-            </P>
-
-            <H2 id="statistics">Statistics</H2>
-            <P>
-              Score variants retain parent-item lineage. Comparisons use paired parent-item
-              bootstrap intervals, permutation tests, and McNemar analyses where applicable, with
-              clustered uncertainty and effect sizes. The configurable Benchmark Robustness Index
-              is explicitly uncalibrated and must not be read as a probability of contamination.
+              Models are reached through four adapters: <C>openai_compatible</C> for any
+              OpenAI-style HTTP endpoint, <C>vllm</C> for local servers, <C>huggingface_local</C> for
+              direct Transformers inference with token log-probabilities, and <C>replay</C> for
+              recorded responses. Responses can be cached so interrupted runs resume without paying
+              twice.
             </P>
 
             <H2 id="install">Install</H2>
+            <Code>{`python -m pip install "veritas-leakage[cli]"
+
+# local Transformers inference and the named benchmark catalog
+python -m pip install "veritas-leakage[cli,local-model,benchmarks]"
+
+# from a checkout
+uv sync --extra cli`}</Code>
             <P>
-              The package is not published on PyPI yet. Install from a local checkout; the second
-              form adds direct local Transformers inference, the named benchmark catalog, and may install PyTorch.
+              Other extras: <C>mcp</C> exposes the tools to MCP clients, and <C>yaml</C> accepts YAML
+              audit specs. List the built-in benchmarks with <C>veritas benchmarks</C>.
             </P>
-            <Code>{`python -m pip install -e "/absolute/path/to/veritas[cli]"
-python -m pip install -e "/absolute/path/to/veritas[cli,local-model,benchmarks]"
-
-# or, from the repository root
-uv sync --extra cli --extra local-model --extra benchmarks
-
-veritas benchmarks
-veritas benchmarks mmlu`}</Code>
 
             <H2 id="run">Run an audit</H2>
-            <Code>{`veritas inspect --config audit.yaml
-veritas audit --config audit.yaml --out audit-run/
-
-# uv-managed checkout
-uv run veritas inspect --config examples/benchmark_integrity/open_weight_audit.json
-uv run veritas audit \\
-  --config examples/benchmark_integrity/open_weight_audit.json \\
-  --out audit-run/`}</Code>
             <P>
-              A catalog audit uses <C>{`benchmark: {adapter: catalog, name: mmlu, limit: 100}`}</C>.
-              Presets currently cover MMLU, MMLU-Pro, ARC-Challenge, OpenBookQA, HellaSwag,
-              CommonsenseQA, PIQA, WinoGrande, TruthfulQA, BoolQ, GPQA, HumanEval, and
-              SWE-bench Verified. <C>inspect</C> validates the specification and estimates requests, tokens, cost, and
-              private-data transfer before inference. The audit directory contains machine-readable
-              data and human-readable reports. Open <C>report.json</C> in the{" "}
-              <Link href="/report" className={DOC_LINK}>report viewer</Link> to inspect prompts,
-              responses, transformations, score comparisons, evidence, unavailable tests, and provenance.
+              An audit spec names a benchmark, a model, the transformations to apply, and the detectors
+              to run. <C>inspect</C> validates it and estimates requests and tokens before anything is
+              sent.
             </P>
+            <Code>{`{
+  "benchmark": { "adapter": "catalog", "name": "mmlu", "limit": 100 },
+  "model": {
+    "id": "gpt-4o-mini",
+    "adapter": "openai_compatible",
+    "endpoint": "https://api.openai.com/v1",
+    "generation": { "temperature": 0, "max_tokens": 16 }
+  },
+  "transformations": [
+    { "type": "choice_permutation" },
+    { "type": "choice_label_remap" },
+    { "type": "formatting" }
+  ],
+  "detectors": [
+    { "type": "perturbation" },
+    { "type": "option_order" },
+    { "type": "template_dependence" }
+  ]
+}`}</Code>
+            <Code>{`export MODEL_API_KEY=...
+veritas inspect --config audit.json
+veritas audit --config audit.json --out audit-run/`}</Code>
+            <P>
+              Catalog benchmarks download from Hugging Face and need the <C>benchmarks</C> extra. For
+              your own data, use <C>{`{"adapter": "jsonl", "path": "items.jsonl"}`}</C> with one item
+              per line.
+            </P>
+            <P>
+              The run prints the scores and each verdict, and writes <C>report.json</C>,{" "}
+              <C>report.md</C>, and <C>report.html</C>. Open <C>report.json</C> in the{" "}
+              <Link href="/report" className={LINK}>report viewer</Link> to see every item, response,
+              and variant.
+            </P>
+
+            <H2 id="browser">Browser runner</H2>
+            <P>
+              The <Link href="/run" className={LINK}>browser runner</Link> audits up to 50 items from
+              eight public multiple-choice benchmarks against OpenAI, Anthropic, Google Gemini, xAI,
+              Mistral, DeepSeek, Together, Fireworks, Groq, OpenRouter, or Hugging Face. Each item is
+              asked three ways: as published, with the options moved, and in a different template.
+              Your key is sent once over HTTPS, used in server memory for that run, and never stored or
+              written into the report. Reasoning models need a larger output budget, which the runner
+              sets automatically.
+            </P>
+
+            <H2 id="transformations">What gets changed</H2>
+            <P>
+              Every variant keeps the meaning of the question and records its lineage: parent item,
+              seed, parameters, and the answer key it is scored against. Variants that would not
+              change anything are skipped.
+            </P>
+            <div className="mt-5 overflow-x-auto rounded-lg border border-line">
+              <table className="w-full min-w-[520px] text-left text-sm">
+                <thead className="bg-subtle text-xs text-muted">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">Transformation</th>
+                    <th className="px-4 py-2.5 font-medium">What changes</th>
+                    <th className="px-4 py-2.5 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TRANSFORMS.map(([name, what, status]) => (
+                    <tr key={name} className="border-t border-hairline align-top">
+                      <td className="px-4 py-3 font-mono text-[0.8125rem] text-fg">{name}</td>
+                      <td className="px-4 py-3 text-secondary">{what}</td>
+                      <td className="px-4 py-3 text-secondary">{status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <P>
+              Only valid variants count toward the robust score. Uncertain ones are reported
+              separately, because a rule cannot prove that <C>x</C> is a variable rather than a
+              multiplication sign.
+            </P>
+
+            <H2 id="decisions">How verdicts are decided</H2>
+            <P>
+              Each paired detector compares an item&apos;s original correctness with its accuracy
+              across valid variants, then reports the gap, a bootstrap 95% interval, a sign-flip
+              permutation p-value, and that p-value corrected for multiple tests (Benjamini–Hochberg).
+            </P>
+            <ul className="mt-4 space-y-2 text-[0.9375rem] leading-relaxed text-secondary">
+              <li><span className="font-medium text-fg">Dependence detected</span> when the gap is positive, its interval is above zero, and the corrected p-value is at most 0.05.</li>
+              <li><span className="font-medium text-fg">Robust</span> when the interval&apos;s upper end is below 5 points: any drop is smaller than that.</li>
+              <li><span className="font-medium text-fg">Inconclusive</span> otherwise, and always with fewer than 10 paired items.</li>
+            </ul>
+            <P>
+              Failed or missing responses are excluded, never counted as wrong. Tests whose inputs are
+              missing, such as token likelihood without log-probabilities, are reported as not run.
+              Thresholds can be set per detector, for example{" "}
+              <C>{`{"type": "option_order", "config": {"min_parent_items": 20}}`}</C>.
+            </P>
+
+            <H2 id="verify">Verify and gate</H2>
+            <P>
+              The audit hash covers the whole report. <C>verify</C> recomputes it and exits non-zero
+              if anything changed after the run; the viewer runs the same check in your browser.{" "}
+              <C>gate</C> fails a CI job when the robustness gap exceeds a threshold, or when no
+              paired comparison exists.
+            </P>
+            <Code>{`veritas verify --report audit-run/report.json
+veritas gate --report audit-run/report.json --max-delta 0.05`}</Code>
 
             <H2 id="privacy">Private benchmarks</H2>
             <P>
-              External adapters require an explicit per-run acknowledgement when the benchmark is
-              marked private. Transfer choices are redacted in provenance, and secrets are excluded
-              from reports and cache keys. Use a local adapter when benchmark terms prohibit external
-              disclosure.
+              Mark a benchmark <C>&quot;visibility&quot;: &quot;private&quot;</C> and Veritas refuses
+              to send it to an external endpoint unless you pass{" "}
+              <C>--acknowledge-external-transfer</C>. API keys are read from the environment and never
+              written to reports or cache keys. Use a local adapter when a benchmark&apos;s terms
+              forbid disclosure.
             </P>
 
             <H2 id="interpretation">Interpretation</H2>
             <P>
-              “Benchmark maxxing” is useful shorthand, not a scientific outcome class. A large drop
-              under a valid transformation can show protocol fragility; it does not by itself show
-              training-set contamination. Strong claims require calibrated detectors, matched
-              controls, alternatives, and uncertainty that support that specific claim.
+              &ldquo;Benchmark maxxing&rdquo; is useful shorthand, not a finding. A large drop under a
+              valid transformation shows that a score depends on presentation; it does not show that
+              the benchmark was in the training data. Claims of contamination need calibrated
+              detectors, matched controls, and evidence that rules out the alternatives each finding
+              lists.
             </P>
 
             <H2 id="legacy">Legacy biology</H2>
             <P>
-              The sequence-based leakage auditor remains supported as a distinct legacy domain. Its
-              existing report fixtures open in the <Link href="/report/legacy" className={DOC_LINK}>legacy v1 viewer</Link>.
-              Command migration and the v2 schema are documented in the repository&apos;s
-              <a href="https://github.com/shreyjain11/veritas/tree/frontend/viewer/docs" className={DOC_LINK}> reference docs</a>.
+              The sequence-based leakage auditor is still supported. Its reports open in the{" "}
+              <Link href="/report/legacy" className={LINK}>legacy viewer</Link>, and its commands are
+              documented in the{" "}
+              <a href="https://github.com/shreyjain11/veritas/tree/main/docs" className={LINK}>reference docs</a>.
             </P>
           </article>
-
-          <aside className="order-1 hidden lg:order-2 lg:block">
-            <div className="sticky top-20">
-              <Toc items={TOC} />
-            </div>
-          </aside>
         </div>
         <Footer />
       </div>

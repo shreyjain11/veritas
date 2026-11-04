@@ -10,6 +10,8 @@ import { FIXTURES } from "../../lib/fixtures";
 import { useVerify } from "../../lib/useVerify";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { Footer } from "../Footer";
+import { Logo } from "../landing/Nav";
+import { ThemeToggle } from "../ThemeToggle";
 import { StatusPill } from "../ui";
 import { CollapseHero } from "./CollapseHero";
 import { HashSeal, HashSealChip } from "./HashSeal";
@@ -97,23 +99,25 @@ export function Viewer() {
   );
 
   return (
-    <div className="mx-auto max-w-[1240px]">
+    <div className="mx-auto max-w-[1120px]">
       {/* Mobile bar */}
       <div className="sticky top-0 z-10 border-b border-line bg-base/90 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="rounded-sm font-mono text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
+            className="inline-flex items-center gap-2 rounded-sm text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
           >
-            veritas
+            <Logo />
+            <span className="sr-only">Veritas home</span>
           </Link>
           <HashSealChip state={verify} />
-          <label className="ml-auto flex items-center gap-1.5 text-[0.75rem] text-secondary">
-            <span className="sr-only">Choose a specimen</span>
+          <ThemeToggle />
+          <label className="ml-auto flex min-w-0 items-center gap-1.5 text-[0.75rem] text-secondary">
+            <span className="sr-only">Choose an example report</span>
             <select
               value={isCustom ? "custom" : active.id}
               onChange={(e) => selectFixture(e.target.value)}
-              className={cn("rounded-md border border-line bg-elevated px-2 py-1 font-mono text-[0.75rem] text-fg", FOCUS)}
+              className={cn("w-full min-w-0 max-w-[12rem] truncate rounded-md border border-line bg-elevated px-2 py-1 text-[0.75rem] text-fg", FOCUS)}
             >
               {FIXTURES.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -130,23 +134,24 @@ export function Viewer() {
       <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr]">
         {/* Desktop rail */}
         <aside className="hidden px-5 py-6 lg:sticky lg:top-0 lg:block lg:h-dvh lg:overflow-y-auto lg:border-r lg:border-line">
-          <div className="mb-5">
-            <Link
-              href="/"
-              className="group inline-flex items-center gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
-            >
-              <span className="font-mono text-sm font-semibold tracking-tight text-fg">veritas</span>
-              <span className="text-[0.6875rem] text-faint transition-colors group-hover:text-muted">
-                ↗ overview
-              </span>
-            </Link>
-            <p className="mt-1 text-[0.75rem] leading-snug text-muted">leakage &amp; robustness audit viewer</p>
+          <div className="mb-5 flex items-start justify-between gap-2">
+            <div>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-iris"
+              >
+                <Logo />
+                <span className="text-[0.9375rem] font-semibold tracking-tight text-fg">Veritas</span>
+              </Link>
+              <p className="mt-1.5 text-[0.8125rem] leading-snug text-muted">Legacy biological leakage reports</p>
+            </div>
+            <ThemeToggle />
           </div>
 
           <HashSeal auditHash={active.report.audit_hash} state={verify} />
 
           <nav className="mt-6">
-            <p className="mb-2 text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-faint">specimens</p>
+            <p className="mb-2 px-3 text-[0.8125rem] font-medium text-secondary">Example reports</p>
             <ul className="flex flex-col gap-0.5">
               {FIXTURES.map((f) => {
                 const selected = active.id === f.id;
@@ -179,7 +184,7 @@ export function Viewer() {
         {/* Main */}
         <main className="min-w-0 px-4 py-6 lg:px-8 lg:py-8">
           <header className="mb-6 flex flex-wrap items-center gap-3">
-            <h2 className="font-mono text-lg text-fg">{active.report.benchmark_name}</h2>
+            <h2 className="min-w-0 font-display text-2xl font-medium text-fg [overflow-wrap:anywhere]">{active.report.benchmark_name}</h2>
             <StatusPill tone="neutral">
               {KIND_LABEL[active.report.report_kind ?? "metric_audit"] ?? active.report.report_kind}
             </StatusPill>

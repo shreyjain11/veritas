@@ -76,7 +76,7 @@ export function SplitsMatrix({ report }: { report: AuditReport }) {
               >
                 <div className="px-3 py-2.5">
                   <div className="text-[0.8125rem] leading-tight text-fg">{split.split_name}</div>
-                  <div className="mt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.06em] text-faint">
+                  <div className="mt-0.5 text-[0.6875rem] text-faint">
                     {split.role}
                   </div>
                 </div>

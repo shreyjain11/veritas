@@ -1,52 +1,127 @@
 @import "tailwindcss";
 
 /*
- * Veritas design system — dark-first, monochrome chrome, color-as-measurement.
- * Chrome (surfaces/text/borders) is grayscale; the three data hues carry meaning ONLY:
- *   iris   = brand / interactive / verified-honest
- *   amber  = reported-inflated / leakage / caution
- *   danger = tamper / mismatch / silent-failure
- * Numbers, hashes and sequences live in mono; prose in sans.
+ * Veritas design system: light and dark themes, color as measurement.
+ * Chrome (surfaces, text, borders) is neutral; the three data hues carry meaning only:
+ *   iris   = interactive, verified, robust
+ *   amber  = caution, inflated, dependence detected
+ *   danger = tamper, mismatch, failure
+ * Numbers, hashes, and code live in mono; prose in sans; page titles in serif.
+ *
+ * Tokens resolve through CSS variables so one set of utilities serves both themes.
+ * Theme choice: system preference by default, overridden by html[data-theme].
  */
-@theme {
-  /* surfaces (cool near-black instrument housing) */
-  --color-base: #0a0c0f;
-  --color-subtle: #0e1216;
-  --color-surface: #14181e;
-  --color-elevated: #1a1f27;
+@theme inline {
+  --color-base: var(--c-base);
+  --color-paper: var(--c-base);
+  --color-subtle: var(--c-subtle);
+  --color-surface: var(--c-surface);
+  --color-elevated: var(--c-elevated);
 
-  /* borders / hairlines */
-  --color-hairline: #1c222a;
-  --color-line: #2a313b;
-  --color-edge: #3a434f;
+  --color-hairline: var(--c-hairline);
+  --color-line: var(--c-line);
+  --color-edge: var(--c-edge);
 
-  /* text — all four pass WCAG AA (>=4.5:1) for small text on every surface above */
-  --color-fg: #e8eaed;
-  --color-secondary: #9ca4ae;
-  --color-muted: #8b929c;
-  --color-faint: #80889a;
+  --color-fg: var(--c-fg);
+  --color-secondary: var(--c-secondary);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
 
-  /* semantic data hues (the ONLY color in the UI) */
-  --color-iris: #6e78f0;
-  --color-iris-fg: #9aa2f7;
-  --color-iris-dim: #1a1f3d;
-  --color-warn: #e0a53b;
-  --color-warn-fg: #f0c674;
-  --color-warn-dim: #33280f;
-  --color-danger: #e5484d;
-  --color-danger-fg: #ff9592;
-  --color-danger-dim: #3a1518;
+  --color-iris: var(--c-iris);
+  --color-iris-fg: var(--c-iris-fg);
+  --color-iris-dim: var(--c-iris-dim);
+  --color-warn: var(--c-warn);
+  --color-warn-fg: var(--c-warn-fg);
+  --color-warn-dim: var(--c-warn-dim);
+  --color-danger: var(--c-danger);
+  --color-danger-fg: var(--c-danger-fg);
+  --color-danger-dim: var(--c-danger-dim);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
+  --font-display: var(--font-serif), ui-serif, Georgia, serif;
+}
 
+@theme {
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
 }
 
+/* light (default): warm paper, ink text. All text tokens pass WCAG AA on every surface. */
 :root {
+  color-scheme: light;
+  --c-base: #faf9f6;
+  --c-subtle: #f4f2ee;
+  --c-surface: #ffffff;
+  --c-elevated: #efede8;
+  --c-hairline: #e8e5df;
+  --c-line: #dad6ce;
+  --c-edge: #c3beb3;
+  --c-fg: #15171b;
+  --c-secondary: #454a52;
+  --c-muted: #5a5f68;
+  --c-faint: #62676f;
+  --c-iris: #4b54d6;
+  --c-iris-fg: #3a42b5;
+  --c-iris-dim: #eceefd;
+  --c-warn: #c27c0e;
+  --c-warn-fg: #855000;
+  --c-warn-dim: #fbf0dc;
+  --c-danger: #d2353b;
+  --c-danger-fg: #a3212a;
+  --c-danger-dim: #fcebeb;
+}
+
+/* dark: cool near-black instrument housing */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --c-base: #0a0c0f;
+    --c-subtle: #0e1216;
+    --c-surface: #14181e;
+    --c-elevated: #1a1f27;
+    --c-hairline: #1c222a;
+    --c-line: #2a313b;
+    --c-edge: #3a434f;
+    --c-fg: #e8eaed;
+    --c-secondary: #a3abb5;
+    --c-muted: #8b929c;
+    --c-faint: #80889a;
+    --c-iris: #6e78f0;
+    --c-iris-fg: #9aa2f7;
+    --c-iris-dim: #1a1f3d;
+    --c-warn: #e0a53b;
+    --c-warn-fg: #f0c674;
+    --c-warn-dim: #33280f;
+    --c-danger: #e5484d;
+    --c-danger-fg: #ff9592;
+    --c-danger-dim: #3a1518;
+  }
+}
+
+:root[data-theme="dark"] {
   color-scheme: dark;
+  --c-base: #0a0c0f;
+  --c-subtle: #0e1216;
+  --c-surface: #14181e;
+  --c-elevated: #1a1f27;
+  --c-hairline: #1c222a;
+  --c-line: #2a313b;
+  --c-edge: #3a434f;
+  --c-fg: #e8eaed;
+  --c-secondary: #a3abb5;
+  --c-muted: #8b929c;
+  --c-faint: #80889a;
+  --c-iris: #6e78f0;
+  --c-iris-fg: #9aa2f7;
+  --c-iris-dim: #1a1f3d;
+  --c-warn: #e0a53b;
+  --c-warn-fg: #f0c674;
+  --c-warn-dim: #33280f;
+  --c-danger: #e5484d;
+  --c-danger-fg: #ff9592;
+  --c-danger-dim: #3a1518;
 }
 
 html {
@@ -62,15 +137,27 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* theme switches should not animate every color on the page */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
 /* every measured number is tabular so columns and readouts align */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
 
-/* default border color (Tailwind v4 borders are currentColor unless set) */
-* {
-  border-color: var(--color-line);
+/* default border color. It must live in the base layer: an unlayered rule would beat every
+   border-color utility (border-iris/30, border-transparent, ...) regardless of specificity. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-line);
+  }
 }
 
 ::selection {
