@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- Resolved every known advisory in the locked dependency trees (pip-audit: 92 -> 0 across 14
+  Python packages; npm audit: 11 -> 0 in the web app, including critical `next` and `vitest`
+  advisories). Notable bumps: `next` 15.5.29, `zod` 4.6.7, `vitest` 5.1, `sharp` 0.35.5,
+  `mcp` 1.30.0, `pillow` 13.0.0, `pyjwt` 2.15.1, `cryptography` 50.0.2, `aiohttp` 3.14.5,
+  `urllib3` 2.8.0, `filelock` 4.2.8.
+- The `mcp` extra now requires `mcp>=1.30,<2`, so installs cannot resolve to a release with
+  the four Streamable-HTTP/auth CVEs fixed in 1.30.0.
+
 ### Fixed
 
 - **v2 findings** — the perturbation finding was reported twice, and an audit with no
