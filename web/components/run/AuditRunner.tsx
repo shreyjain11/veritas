@@ -170,6 +170,10 @@ export function AuditRunner() {
           <Link href="/report?sample" className="font-medium text-iris-fg underline-offset-4 hover:underline">
             Explore a sample report
           </Link>{" "}
+          or see a{" "}
+          <Link href="/report?real" className="font-medium text-iris-fg underline-offset-4 hover:underline">
+            real-model run
+          </Link>{" "}
           first.
         </p>
       </header>

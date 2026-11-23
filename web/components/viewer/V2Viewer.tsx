@@ -46,18 +46,29 @@ export function V2Viewer() {
     [accept],
   );
 
-  const loadSample = useCallback(async () => {
-    setLoading(true);
-    try {
-      const sample = await import("../../fixtures/v2/sample_report.json");
-      accept(sample.default, "sample report");
-    } finally {
-      setLoading(false);
-    }
-  }, [accept]);
+  const loadSample = useCallback(
+    async (kind: "synthetic" | "real" = "synthetic") => {
+      setLoading(true);
+      try {
+        if (kind === "real") {
+          const real = await import("../../fixtures/v2/real_model_report.json");
+          accept(real.default, "real-model run · Qwen2.5-0.5B on live MMLU");
+        } else {
+          const sample = await import("../../fixtures/v2/sample_report.json");
+          accept(sample.default, "sample report");
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [accept],
+  );
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("sample")) void loadSample();
+    const params = new URLSearchParams(window.location.search);
+    // ?real loads the live-model run; ?sample (or ?sample=real) the synthetic demo.
+    if (params.has("real") || params.get("sample") === "real") void loadSample("real");
+    else if (params.has("sample")) void loadSample("synthetic");
   }, [loadSample]);
 
   return (
@@ -83,9 +94,14 @@ export function V2Viewer() {
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {report && (
-            <button type="button" onClick={() => void loadSample()} className={buttonClass("ghost")}>
-              Sample
-            </button>
+            <>
+              <button type="button" onClick={() => void loadSample("synthetic")} className={buttonClass("ghost")}>
+                Sample
+              </button>
+              <button type="button" onClick={() => void loadSample("real")} className={buttonClass("ghost")}>
+                Real run
+              </button>
+            </>
           )}
           <button type="button" onClick={() => inputRef.current?.click()} className={buttonClass(report ? "secondary" : "primary")}>
             {report ? "Open another" : "Open report.json"}
@@ -119,13 +135,28 @@ export function V2Viewer() {
           <ReportView report={report} />
         </div>
       ) : (
-        <EmptyState dragging={dragging} choose={() => inputRef.current?.click()} sample={() => void loadSample()} />
+        <EmptyState
+          dragging={dragging}
+          choose={() => inputRef.current?.click()}
+          sample={() => void loadSample("synthetic")}
+          real={() => void loadSample("real")}
+        />
       )}
     </main>
   );
 }
 
-function EmptyState({ dragging, choose, sample }: { dragging: boolean; choose: () => void; sample: () => void }) {
+function EmptyState({
+  dragging,
+  choose,
+  sample,
+  real,
+}: {
+  dragging: boolean;
+  choose: () => void;
+  sample: () => void;
+  real: () => void;
+}) {
   return (
     <section className="py-14">
       <h1 className="font-display text-[2.5rem] leading-tight font-medium tracking-[-0.015em] text-fg">Open an audit report</h1>
@@ -145,7 +176,15 @@ function EmptyState({ dragging, choose, sample }: { dragging: boolean; choose: (
           <button type="button" onClick={sample} className={buttonClass("secondary")}>
             Explore the sample report
           </button>
+          <button type="button" onClick={real} className={buttonClass("secondary")}>
+            See a real-model run
+          </button>
         </div>
+        <p className="mt-4 max-w-xl text-xs text-muted">
+          The sample is a scripted model on a synthetic benchmark. The real-model run is
+          Qwen2.5-0.5B answering 60 live MMLU questions — a small model near chance, so Veritas
+          correctly finds no robustness gap. Both reports re-verify their own hash.
+        </p>
       </div>
       <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <Link className="font-medium text-iris-fg underline-offset-4 hover:underline" href="/run">Run a new audit →</Link>
