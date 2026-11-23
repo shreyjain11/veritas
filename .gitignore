@@ -25,6 +25,7 @@ htmlcov/
 
 # Veritas cache (project-local opt-in; default lives under $XDG_CACHE_HOME)
 .veritas_cache/
+.veritas/
 
 # Docs site build output (mkdocs)
 site/
