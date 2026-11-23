@@ -18,6 +18,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **No "robust" verdict from unreadable answers** — a reasoning model cut off by a small output
+  budget scored 0% on both the original and the variants, and that zero gap was reported as
+  evidence *against* dependence. Paired findings are now inconclusive when more than 20% of
+  canonical answers are unparseable (`max_unparsed_fraction`) or canonical accuracy is 0, and
+  the report says how many responses named no answer and how many hit the token limit.
+- **OpenAI API from the CLI** — `api.openai.com` receives `max_completion_tokens` (current
+  models reject `max_tokens`), and reasoning models are not sent an explicit temperature.
+- **Usable at API scale** — the OpenAI-compatible adapter sends requests concurrently
+  (`generation.extra.concurrency`, default 4), honors `Retry-After` on rate limits, and cached
+  runs batch their misses; transport settings no longer invalidate the response cache.
+- **Hosted error messages** — Gemini and xAI answer a bad key with HTTP 400 and Fireworks with
+  404, which were reported as "the model may not support chat completions" / "model not found".
+  Errors now quote the provider's own message (with the key removed), and rate limits get four
+  retries instead of two.
+- **`npm run dev` works** — the Content-Security-Policy blocked the eval that Next.js dev mode
+  needs, so the local site rendered but never became interactive. Production keeps the strict
+  policy.
+- `uv run pytest` no longer runs the 10k-item scale test and network tests by default (they
+  took over ten minutes); opt in with `-m "external or scale"`.
+
 - **v2 findings** — the perturbation finding was reported twice, and an audit with no
   transformations crashed; each detector now runs exactly once.
 - **Verdicts need evidence** — "supports" requires a 95% interval above zero and a

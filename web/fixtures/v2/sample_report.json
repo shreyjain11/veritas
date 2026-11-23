@@ -1,5 +1,5 @@
 {
-  "audit_hash": "1394a0877d3df97789c0706df968c65a1f5f2317d53a94fc987c51a87aac25b0",
+  "audit_hash": "f3f9289260f1b61a76b48869c54c2b1eaf3ce136f0f5673baf773ab4586a459c",
   "benchmark": {
     "canonicalization": {},
     "id": "synthetic-arithmetic-demo",
@@ -1374,6 +1374,7 @@
       "corrected_p_value": 0.0017996400719856027,
       "details": {
         "canonical_score": 0.975,
+        "canonical_unparsed_count": 0,
         "ci": [
           0.06666666666666668,
           0.3
@@ -1450,6 +1451,7 @@
       "corrected_p_value": 0.0023995200959808036,
       "details": {
         "canonical_score": 0.975,
+        "canonical_unparsed_count": 0,
         "ci": [
           0.125,
           0.45
@@ -1497,6 +1499,7 @@
       "corrected_p_value": 1.0,
       "details": {
         "canonical_score": 0.975,
+        "canonical_unparsed_count": 0,
         "ci": [
           -0.075,
           0.075
@@ -1599,7 +1602,8 @@
   ],
   "limitations": [
     "Behavioral evidence cannot establish a closed model's training membership.",
-    "Generated variants are reported separately by validation status; only validated variants enter the robust score."
+    "Generated variants are reported separately by validation status; only validated variants enter the robust score.",
+    "13 of 160 response(s) named no answer choice and were scored as wrong (0 stopped at the token limit). If the model reasons before answering, raise generation.max_tokens."
   ],
   "provenance": {
     "audit_spec_hash": "a31cd9f52a5b04381d9ba067dab9b120ffa3ba889a31bdca17595a1b28f4d636",

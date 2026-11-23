@@ -134,7 +134,12 @@ function Headline({ report }: { report: V2Report }) {
   } else if (gap == null) {
     sentence = "No paired robustness comparison was available for this audit.";
   } else {
-    sentence = "Inconclusive: the interval is compatible with both no effect and a meaningful drop. Audit more items to decide.";
+    // Say why: too few items, unreadable answers, and a wide interval need different fixes.
+    const rule = report.findings.find((f) => f.status === "complete" && typeof f.details?.decision_rule === "string")?.details?.decision_rule;
+    sentence =
+      typeof rule === "string" && !rule.startsWith("interval is compatible")
+        ? `Inconclusive: ${rule}.`
+        : "Inconclusive: the interval is compatible with both no effect and a meaningful drop. Audit more items to decide.";
   }
   const cards: Array<[string, string, string?, Tone?]> = [
     ["Reported", percent(score.reported_score), score.reported_score == null ? "no published claim supplied" : "claimed by the model's authors"],

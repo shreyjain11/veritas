@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { validateBrowserAuditRequest, type BrowserAuditRequest } from "../lib/browser-audit";
-import { runBrowserAudit, TIME_BUDGET_MS } from "../lib/server-audit";
+import { errorMessage, runBrowserAudit, TIME_BUDGET_MS } from "../lib/server-audit";
 import { verifyV2Report } from "../lib/v2-hash";
+import { parseV2Report } from "../lib/v2-report";
 
 const KEY = "sk-test-key-never-in-report";
 
@@ -64,6 +65,9 @@ describe("hosted browser audit (mocked provider + dataset host)", () => {
     expect((await verifyV2Report(JSON.parse(JSON.stringify(report)))).ok).toBe(true);
     expect(JSON.stringify(report)).not.toContain(KEY);
     expect(report.benchmark.version).toBe("pinned-sha");
+    // The runner page renders exactly this object, so it must satisfy the viewer's parser.
+    const view = parseV2Report(JSON.parse(JSON.stringify(report)));
+    expect(view.findings).toHaveLength(report.findings.length);
   });
 
   it("flags answer-position dependence for a position-bound model", async () => {
@@ -85,6 +89,30 @@ describe("hosted browser audit (mocked provider + dataset host)", () => {
 
   it("surfaces a clear error when every request is rejected", async () => {
     await expect(runBrowserAudit(request(), undefined, deps(() => ({ status: 401 })))).rejects.toThrow("Provider rejected the key (HTTP 401)");
+  });
+
+  it("does not call a model robust when its answers cannot be read", async () => {
+    // A reasoning model cut off by the output budget: 0% everywhere is a zero gap, not robustness.
+    const report = await runBrowserAudit(request(), undefined, deps(() => "Let me think step by step about"));
+    expect(report.score.canonical_reproduced_score).toBe(0);
+    const verdict = finding(report, "perturbation");
+    expect(verdict.direction).toBe("inconclusive");
+    expect((verdict.details as { decision_rule: string }).decision_rule).toContain("no parseable answer");
+    expect(report.limitations.some((note) => note.includes("named no answer choice"))).toBe(true);
+  });
+
+  it("passes on the provider's own explanation without the key", () => {
+    // Gemini and xAI answer a bad key with HTTP 400, so the message must not blame the model.
+    const cause = Object.assign(new Error(`API key not valid: ${KEY}. Please pass a valid API key.`), { statusCode: 400 });
+    const message = errorMessage({ lastError: cause }, KEY);
+    expect(message).toContain("Check the key and the model ID");
+    expect(message).toContain("API key not valid: [key].");
+    expect(message).not.toContain(KEY);
+    // Gemini wraps its error in an array, which leaves the SDK with a bare "Bad Request".
+    const gemini = Object.assign(new Error("Bad Request"), { statusCode: 400, responseBody: JSON.stringify([{ error: { message: "API key not valid." } }]) });
+    expect(errorMessage(gemini, KEY)).toContain('Provider said: "API key not valid."');
+    const xai = Object.assign(new Error("Bad Request"), { statusCode: 400, responseBody: JSON.stringify({ code: "x", error: "Incorrect API key provided" }) });
+    expect(errorMessage(xai, KEY)).toContain("Incorrect API key provided");
   });
 
   it("uses max_completion_tokens for OpenAI and drops temperature for reasoning models", async () => {

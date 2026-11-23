@@ -6,6 +6,7 @@ import hashlib
 import json
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from veritas.benchmark_integrity.adapters import ModelAdapter
 from veritas.benchmark_integrity.contracts import (
@@ -20,6 +21,19 @@ from veritas.benchmark_integrity.prompting import PROMPT_FORMAT_VERSION
 # Run budgets bound how many requests an audit may make; they never change a response,
 # so raising a limit and resuming must reuse everything already paid for.
 _BUDGET_FIELDS = frozenset({"request_limit", "token_limit", "max_cost_usd"})
+# Transport settings change how a request is delivered, never what the model is asked.
+_TRANSPORT_EXTRA = frozenset(
+    {"api_key_env", "max_retries", "timeout_s", "retry_backoff_s", "concurrency"}
+)
+_BATCH = 32
+
+
+def _generation_key(generation: dict[str, Any]) -> dict[str, Any]:
+    extra = generation.get("extra")
+    if not isinstance(extra, dict):
+        return generation
+    kept = {key: value for key, value in extra.items() if key not in _TRANSPORT_EXTRA}
+    return {**generation, "extra": kept}
 
 
 class CachedAdapter:
@@ -43,23 +57,25 @@ class CachedAdapter:
     def generate(
         self, items: Sequence[BenchmarkItem], config: GenerationConfig
     ) -> Sequence[ModelResponse]:
-        responses: list[ModelResponse] = []
-        for item in items:
-            path = self._path(item, config)
-            cached = self._read(path)
-            if cached is not None:
-                self.hits += 1
-                responses.append(cached)
-                continue
-            self.misses += 1
-            response = self._inner.generate((item,), config)[0]
-            if response.error is None:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                temporary = path.with_suffix(".tmp")
-                temporary.write_text(response.model_dump_json(), encoding="utf-8")
-                temporary.replace(path)
-            responses.append(response)
-        return responses
+        paths = [self._path(item, config) for item in items]
+        responses: list[ModelResponse | None] = [self._read(path) for path in paths]
+        missing = [index for index, cached in enumerate(responses) if cached is None]
+        self.hits += len(items) - len(missing)
+        self.misses += len(missing)
+        # Misses go to the adapter in batches so it can parallelize them, and each batch is
+        # written before the next starts so an interrupted run loses at most one batch.
+        for start in range(0, len(missing), _BATCH):
+            batch = missing[start : start + _BATCH]
+            generated = self._inner.generate([items[index] for index in batch], config)
+            for index, response in zip(batch, generated, strict=True):
+                if response.error is None:
+                    path = paths[index]
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    temporary = path.with_suffix(".tmp")
+                    temporary.write_text(response.model_dump_json(), encoding="utf-8")
+                    temporary.replace(path)
+                responses[index] = response
+        return [response for response in responses if response is not None]
 
     @staticmethod
     def _read(path: Path) -> ModelResponse | None:
@@ -76,11 +92,12 @@ class CachedAdapter:
             for key, value in self._target.model_dump(mode="json").items()
             if key not in _BUDGET_FIELDS
         }
+        target["generation"] = _generation_key(target["generation"])
         payload = {
             "target": target,
             "adapter": self._inner.adapter_id,
             "item": item.model_dump(mode="json"),
-            "generation": config.model_dump(mode="json"),
+            "generation": _generation_key(config.model_dump(mode="json")),
             "prompt_format": PROMPT_FORMAT_VERSION,
         }
         digest = hashlib.sha256(

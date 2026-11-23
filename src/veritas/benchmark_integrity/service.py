@@ -98,6 +98,9 @@ _STRENGTH_ORDER = list(EvidenceStrength)
 DEFAULT_ALPHA = 0.05
 DEFAULT_EQUIVALENCE_MARGIN = 0.05
 DEFAULT_MIN_PARENT_ITEMS = 10
+# Above this share of unparseable canonical answers the audit is measuring the parser or
+# the output budget, not the model, so paired findings stay inconclusive.
+DEFAULT_MAX_UNPARSED_FRACTION = 0.2
 
 
 def load_spec(path: Path) -> AuditSpec:
@@ -335,6 +338,11 @@ def _matcher(kind: str) -> Matcher:
     return lambda answer, expected: str(answer).strip() == str(expected).strip()
 
 
+def _unparsed(response: ModelResponse | None) -> bool:
+    """A response that arrived but named no answer (scored wrong, and worth flagging)."""
+    return response is not None and response.error is None and response.parsed_answer is None
+
+
 def _outcome(response: ModelResponse | None, expected: object, match: Matcher) -> bool | None:
     """``None`` when there is no usable response (missing or errored) — never "wrong"."""
     if response is None or response.error is not None:
@@ -351,6 +359,7 @@ class _Paired:
     transformed: tuple[float, ...]
     variants: int
     errored_variants: int
+    canonical_unparsed: int
 
 
 def _mean(values: Sequence[float]) -> float:
@@ -379,9 +388,9 @@ class _Analysis:
         self.seed = seed
         self.match = _matcher(benchmark.scoring.kind)
         self.external = benchmark.scoring.kind.startswith("external_")
-        by_id = {response.item_id: response for response in canonical}
+        self.canonical_by_id = {response.item_id: response for response in canonical}
         self.canonical_outcomes = {
-            item.id: _outcome(by_id.get(item.id), item.expected_output, self.match)
+            item.id: _outcome(self.canonical_by_id.get(item.id), item.expected_output, self.match)
             for item in benchmark.items
         }
         self.transformed_by_id = {response.item_id: response for response in transformed}
@@ -407,6 +416,7 @@ class _Analysis:
         parents: list[str] = []
         left: list[float] = []
         right: list[float] = []
+        unparsed = 0
         for item in self.benchmark.items:
             values = by_parent.get(item.id)
             base = self.canonical_outcomes.get(item.id)
@@ -415,7 +425,8 @@ class _Analysis:
             parents.append(item.id)
             left.append(float(base))
             right.append(_mean(values))
-        return _Paired(tuple(parents), tuple(left), tuple(right), variants, errored)
+            unparsed += _unparsed(self.canonical_by_id.get(item.id))
+        return _Paired(tuple(parents), tuple(left), tuple(right), variants, errored, unparsed)
 
     def valid(self, families: frozenset[str] | None = None) -> list[DerivedItem]:
         return [
@@ -430,6 +441,7 @@ class _Analysis:
             "parent_item_count": len(paired.parents),
             "variant_count": paired.variants,
             "errored_variant_count": paired.errored_variants,
+            "canonical_unparsed_count": paired.canonical_unparsed,
         }
         if not paired.parents:
             return details
@@ -675,11 +687,25 @@ class _Analysis:
             alpha = self._config(name, "alpha", DEFAULT_ALPHA)
             margin = self._config(name, "equivalence_margin", DEFAULT_EQUIVALENCE_MARGIN)
             minimum = int(self._config(name, "min_parent_items", DEFAULT_MIN_PARENT_ITEMS))
+            max_unparsed = self._config(
+                name, "max_unparsed_fraction", DEFAULT_MAX_UNPARSED_FRACTION
+            )
             details = draft["details"]
             low, high = details["ci"]
+            unparsed = details["canonical_unparsed_count"] / details["parent_item_count"]
+            inconclusive = (EvidenceDirection.INCONCLUSIVE, EvidenceStrength.INCONCLUSIVE)
             if details["parent_item_count"] < minimum:
-                direction, strength = EvidenceDirection.INCONCLUSIVE, EvidenceStrength.INCONCLUSIVE
+                direction, strength = inconclusive
                 rule = f"fewer than {minimum} paired parent items"
+            elif unparsed > max_unparsed:
+                direction, strength = inconclusive
+                rule = (
+                    f"{unparsed:.0%} of canonical responses had no parseable answer; the "
+                    "comparison would measure the parser or output budget, not the model"
+                )
+            elif details["canonical_score"] == 0:
+                direction, strength = inconclusive
+                rule = "no canonical answer was correct, so a drop cannot be observed"
             elif details["gap"] > 0 and low > 0 and value <= alpha:
                 direction, strength = EvidenceDirection.SUPPORTS, EvidenceStrength.WEAK_INDIRECT
                 rule = f"paired drop with interval above 0 and corrected p <= {alpha}"
@@ -718,6 +744,15 @@ class _Analysis:
             notes.append(
                 f"{failed_variants} transformed response(s) were missing or failed and were "
                 "excluded from paired comparisons."
+            )
+        responses = [*self.canonical, *self.transformed]
+        unparsed = [response for response in responses if _unparsed(response)]
+        if unparsed and self.benchmark.items[0].choices:
+            truncated = sum(1 for response in unparsed if response.finish_reason == "length")
+            notes.append(
+                f"{len(unparsed)} of {len(responses)} response(s) named no answer choice and "
+                f"were scored as wrong ({truncated} stopped at the token limit). If the model "
+                "reasons before answering, raise generation.max_tokens."
             )
         if self.spec.transformations:
             covered = {value.transformation.parent_item_id for value in self.derived}

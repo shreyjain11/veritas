@@ -337,3 +337,51 @@ def test_transform_lineage_matches_scored_answer_keys(tmp_path: Path) -> None:
     }
     for child_id, transformation in children.items():
         assert transformation.expected_output == items[child_id].expected_output
+
+
+def test_unparseable_canonical_answers_block_a_verdict(tmp_path: Path) -> None:
+    # A reasoning model cut off by a small output budget answers nothing parseable anywhere.
+    # Canonical 0% vs. variants 0% is a zero gap, but it is not evidence of robustness.
+    spec = _spec(tmp_path, variants_correct=None)
+    rambling = {key: "Let me think about this step by" for key in (f"q{i}" for i in range(12))}
+    rambling.update({f"q{i}::choice-order::42": "Let me think" for i in range(12)})
+    raw = spec.model_dump(mode="json")
+    raw["model"]["generation"]["extra"]["responses"] = rambling
+    report = audit(AuditSpec.model_validate(raw))
+    finding = _finding(report, "option_order")
+    assert finding.effect_size == 0.0
+    assert finding.direction is EvidenceDirection.INCONCLUSIVE
+    assert "no parseable answer" in finding.details["decision_rule"]
+    assert finding.details["canonical_unparsed_count"] == 12
+    assert any("named no answer choice" in note for note in report.limitations)
+
+
+def test_zero_canonical_accuracy_cannot_show_robustness(tmp_path: Path) -> None:
+    spec = _spec(tmp_path, variants_correct=None)
+    raw = spec.model_dump(mode="json")
+    wrong = {f"q{i}": "b" for i in range(12)} | {f"q{i}::choice-order::42": "a" for i in range(12)}
+    raw["model"]["generation"]["extra"]["responses"] = wrong
+    finding = _finding(audit(AuditSpec.model_validate(raw)), "option_order")
+    assert finding.direction is EvidenceDirection.INCONCLUSIVE
+    assert "no canonical answer was correct" in finding.details["decision_rule"]
+
+
+def test_answering_a_label_that_no_longer_exists_is_still_evidence(tmp_path: Path) -> None:
+    # Unparseable *variant* answers (the old label under renamed labels) are the signal, not
+    # noise: only unparseable canonical answers block a verdict.
+    spec = _spec(tmp_path, variants_correct=None, transformations=("choice_label_remap",))
+    raw = spec.model_dump(mode="json")
+    responses = raw["model"]["generation"]["extra"]["responses"]
+    responses.update({f"q{i}::label-remap::42": "a" for i in range(12)})
+    report = audit(AuditSpec.model_validate(raw))
+    finding = _finding(report, "option_order")
+    assert finding.effect_size == 1.0
+    assert finding.direction is EvidenceDirection.SUPPORTS
+
+
+def test_shipped_api_example_is_a_valid_spec() -> None:
+    root = Path(__file__).resolve().parents[2]
+    spec = load_spec(root / "examples" / "benchmark_integrity" / "api_audit.json")
+    check = inspect_audit(spec)
+    assert check["estimated_requests"] == 400 and check["within_limits"]
+    assert spec.model.adapter == "openai_compatible"

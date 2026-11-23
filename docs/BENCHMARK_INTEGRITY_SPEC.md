@@ -42,6 +42,9 @@ Benjamini-Hochberg-corrected p-value across all tested findings. The verdict is:
 - **supports** (weak indirect) — gap > 0, interval lower bound > 0, and corrected p ≤ `alpha` (0.05);
 - **contradicts** (against) — interval upper bound < `equivalence_margin` (0.05): any drop is smaller than the margin;
 - **inconclusive** — otherwise, or with fewer than `min_parent_items` (10) paired items.
+  A verdict is also withheld when more than `max_unparsed_fraction` (0.2) of the canonical
+  responses name no answer, or when canonical accuracy is 0: a model that cannot be read or
+  has nothing to lose shows a zero gap that is not evidence of robustness.
 
 Each threshold can be overridden per detector, e.g. `{"type": "option_order", "config": {"min_parent_items": 20}}`.
 The evidence matrix maps each hypothesis to the detectors that bear on it, lists supporting,

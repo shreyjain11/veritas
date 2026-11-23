@@ -129,3 +129,14 @@ def test_parse_answer_is_linear_on_adversarial_model_output(text: str) -> None:
 def test_parse_answer_handles_multiline_and_tabbed_statements() -> None:
     assert parse_answer(ABCD, "Let me think.\n\nThe answer is\n\t(C)") == "c"
     assert parse_answer(ABCD, "Answer:\n**B**") == "b"
+
+
+def test_reasoning_model_detection_matches_the_hosted_runner() -> None:
+    # Same cases as web/test/audit-logic.test.ts ("recognizes reasoning models").
+    from veritas.benchmark_integrity.prompting import is_reasoning_model
+
+    reasoning = ["o3-mini", "gpt-5", "openai/o4-mini", "deepseek-reasoner", "deepseek-r1"]
+    reasoning += ["gemini-2.5-flash", "qwq-32b"]
+    plain = ["gpt-4o-mini", "llama-3.3-70b-versatile", "claude-haiku-5-5", "mistral-small-latest"]
+    assert all(is_reasoning_model(model) for model in reasoning)
+    assert not any(is_reasoning_model(model) for model in plain)

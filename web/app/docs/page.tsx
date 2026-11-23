@@ -137,6 +137,14 @@ uv sync --extra cli`}</Code>
 veritas inspect --config audit.json
 veritas audit --config audit.json --out audit-run/`}</Code>
             <P>
+              The same spec works for any OpenAI-compatible endpoint: change <C>model.id</C> and{" "}
+              <C>model.endpoint</C>. Requests run 4 at a time by default (set{" "}
+              <C>generation.extra.concurrency</C>), rate limits are retried using the provider&apos;s{" "}
+              <C>Retry-After</C>, and with <C>runtime.cache_dir</C> set an interrupted run resumes
+              without paying twice. Reasoning models need <C>max_tokens</C> of 1024 or more; if most
+              answers are unreadable, the verdict is inconclusive, never &quot;robust&quot;.
+            </P>
+            <P>
               Catalog benchmarks download from Hugging Face and need the <C>benchmarks</C> extra. For
               your own data, use <C>{`{"adapter": "jsonl", "path": "items.jsonl"}`}</C> with one item
               per line.

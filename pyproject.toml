@@ -175,7 +175,8 @@ disallow_untyped_decorators = false
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --strict-config --cov=veritas --cov-report=term-missing"
+# Network (`external`) and 10k-item (`scale`) tests are opt-in: `pytest -m "external or scale"`.
+addopts = "-ra --strict-markers --strict-config --cov=veritas --cov-report=term-missing -m 'not external and not scale'"
 markers = [
     "requires_mmseqs: needs the pinned mmseqs2 binary",
     "requires_diamond: needs the pinned diamond binary",

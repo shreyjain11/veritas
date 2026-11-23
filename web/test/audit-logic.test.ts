@@ -82,6 +82,8 @@ describe("paired statistics and decisions", () => {
     expect(classify(stable, 1).direction).toBe("contradicts");
     const tiny = pairedStats([1, 1, 1], [0, 0, 0])!;
     expect(classify(tiny, 0.001).rule).toContain("fewer than 10");
+    expect(classify(stable, 1, 3).direction).toBe("inconclusive");
+    expect(classify({ ...stable, canonical_score: 0, transformed_score: 0 }, 1).rule).toContain("no canonical answer was correct");
     expect(pairedStats([], [])).toBeNull();
   });
 

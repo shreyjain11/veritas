@@ -36,6 +36,20 @@ _WHITESPACE = re.compile(r"\s+")
 _EDGE_NOISE = " \t\r\n*_`\"'\u201c\u201d\u2018\u2019()[]{}<>.:;,!?"
 
 
+_REASONING_MODEL = re.compile(
+    r"(^|/)(o\d|gpt-5)|reasoner|(^|[-_/])r1([-_/]|$)|thinking|qwq|gemini-(2\.5|[3-9])",
+    re.IGNORECASE,
+)
+
+
+def is_reasoning_model(model_id: str) -> bool:
+    """Model IDs that spend output tokens on hidden reasoning and reject ``temperature=0``.
+
+    Kept identical to ``isReasoningModel`` in the hosted runner (web/lib/audit-logic.ts).
+    """
+    return _REASONING_MODEL.search(model_id) is not None
+
+
 def prompt_text(item: BenchmarkItem) -> str:
     """The item's task text, flattening chat-style prompts to their message contents."""
     if isinstance(item.prompt, tuple):

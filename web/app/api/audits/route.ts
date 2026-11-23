@@ -17,7 +17,13 @@ export async function POST(request: Request) {
     if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
       return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
     }
-    const input = validateBrowserAuditRequest(JSON.parse(rawBody));
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Request body is not valid JSON." }, { status: 400 });
+    }
+    const input = validateBrowserAuditRequest(parsed);
     const report = await runBrowserAudit(input, request.signal);
     return NextResponse.json(report, {
       headers: {

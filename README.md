@@ -79,9 +79,20 @@ Create a JSON (or YAML with the optional YAML dependency) audit specification po
 to a JSONL benchmark and a model adapter, then inspect it before spending API budget:
 
 ```bash
-veritas inspect --config audit.json
-veritas audit --config audit.json --out audit-run/
+export MODEL_API_KEY=...   # read from the environment; never written to the report or cache
+veritas inspect --config examples/benchmark_integrity/api_audit.json
+veritas audit --config examples/benchmark_integrity/api_audit.json --out audit-run/
 ```
+
+[`examples/benchmark_integrity/api_audit.json`](examples/benchmark_integrity/api_audit.json)
+audits 100 MMLU items (400 requests, about 6,400 output tokens) against any
+OpenAI-compatible endpoint: change `model.id` and `model.endpoint` for Anthropic
+(`https://api.anthropic.com/v1`), Gemini, Groq, Together, OpenRouter, or a local vLLM
+server. Requests run 4 at a time by default (`generation.extra.concurrency`), rate
+limits are retried with the provider's `Retry-After`, and with `runtime.cache_dir` set an
+interrupted run resumes without paying twice. Reasoning models think before they answer,
+so give them `max_tokens` of 1024 or more; if most answers come back unreadable the
+verdict is reported as inconclusive rather than as "robust".
 
 The output package contains `report.json`, which opens in the schema-v2 report viewer.
 Every report is signed: `veritas verify --report audit-run/report.json` (or the

@@ -251,15 +251,40 @@ function jobsFor(entry: BrowserBenchmarkItem): PromptJob[] {
   ];
 }
 
-function errorMessage(error: unknown): string {
+/** Providers disagree on the error shape: {error:{message}}, {error:"..."}, [{error:{message}}]. */
+function bodyMessage(body: unknown): string {
+  try {
+    let value: unknown = typeof body === "string" ? JSON.parse(body) : body;
+    if (Array.isArray(value)) value = value[0];
+    const record = value as { error?: unknown; message?: unknown } | null;
+    const error = record?.error;
+    if (typeof error === "string") return error;
+    const nested = (error as { message?: unknown } | undefined)?.message ?? record?.message;
+    return typeof nested === "string" ? nested : "";
+  } catch {
+    return "";
+  }
+}
+
+/** The provider's own explanation, with the key removed, so a 400 is diagnosable. */
+function providerDetail(cause: unknown, apiKey: string): string {
+  const fromBody = bodyMessage((cause as { responseBody?: unknown }).responseBody);
+  const raw = fromBody || (cause instanceof Error ? cause.message : "");
+  const text = raw.split(apiKey).join("[key]").replace(/\s+/g, " ").trim().slice(0, 200);
+  return text ? ` Provider said: "${text}"` : "";
+}
+
+export function errorMessage(error: unknown, apiKey: string): string {
   // generateText wraps exhausted retries in a RetryError; the HTTP detail is on lastError.
   const cause = typeof error === "object" && error && "lastError" in error ? (error as { lastError: unknown }).lastError : error;
   const status = typeof cause === "object" && cause && "statusCode" in cause ? Number((cause as { statusCode: unknown }).statusCode) : null;
-  if (status === 401 || status === 403) return `Provider rejected the key (HTTP ${status}). Check the key and its model permissions.`;
-  if (status === 404) return "Provider returned HTTP 404: the model ID was not found for this provider.";
-  if (status === 429) return "Provider rate limit (HTTP 429) persisted after retries.";
-  if (status === 400) return "Provider rejected the request (HTTP 400). The model may not support chat completions or these parameters.";
-  if (status) return `Provider request failed (HTTP ${status}).`;
+  const detail = status ? providerDetail(cause, apiKey) : "";
+  if (status === 401 || status === 403) return `Provider rejected the key (HTTP ${status}). Check the key and its model permissions.${detail}`;
+  // Several providers answer a bad key with 400 or 404, so these never assert a single cause.
+  if (status === 404) return `Provider returned HTTP 404. Check the model ID, and that this key can access it.${detail}`;
+  if (status === 429) return `Provider rate limit (HTTP 429) persisted after retries. Try fewer items or a higher-tier key.${detail}`;
+  if (status === 400) return `Provider rejected the request (HTTP 400). Check the key and the model ID.${detail}`;
+  if (status) return `Provider request failed (HTTP ${status}).${detail}`;
   if (cause instanceof Error && /timeout|aborted/i.test(cause.name + cause.message)) return "Provider request timed out.";
   return "Provider request failed. Verify the provider, model ID, key, balance, and model permissions.";
 }
@@ -304,7 +329,7 @@ export async function runBrowserAudit(
         prompt: job.prompt,
         temperature: reasoning ? undefined : 0,
         maxOutputTokens: request.maxOutputTokens,
-        maxRetries: 2,
+        maxRetries: 4,
         timeout: requestTimeout,
         abortSignal: signal,
       });
@@ -319,7 +344,7 @@ export async function runBrowserAudit(
       };
     } catch (cause) {
       if (signal.aborted) throw cause;
-      return { ...base, raw_text: "", parsed_answer: null, latency_ms: deps.now() - started, token_count: null, finish_reason: "error", error: errorMessage(cause) };
+      return { ...base, raw_text: "", parsed_answer: null, latency_ms: deps.now() - started, token_count: null, finish_reason: "error", error: errorMessage(cause, request.apiKey) };
     }
   });
   if (responses.every((response) => response.error)) {
@@ -342,6 +367,7 @@ export async function runBrowserAudit(
     const left: number[] = [];
     const right: number[] = [];
     let errored = 0;
+    let canonicalUnparsed = 0;
     for (const entry of loaded.items) {
       const base = canonicalOutcomes.get(entry.id);
       const values = jobs
@@ -352,8 +378,9 @@ export async function runBrowserAudit(
       if (base == null || !valid.length) continue;
       left.push(base);
       right.push(valid.reduce((sum, value) => sum + value, 0) / valid.length);
+      if (byId.get(entry.id)?.parsed_answer == null) canonicalUnparsed++;
     }
-    return { stats: pairedStats(left, right, SEED), errored };
+    return { stats: pairedStats(left, right, SEED), errored, canonicalUnparsed };
   };
   const detectors: Array<{ id: string; hypothesis: string; families: Family[] }> = [
     { id: "perturbation", hypothesis: "benchmark-template overfitting or surface-form dependence", families: ["choice_order", "formatting"] },
@@ -366,7 +393,7 @@ export async function runBrowserAudit(
   const findings: Array<Record<string, unknown>> = results.map((result) => {
     if (!result.stats) return notRun(result.id, result.hypothesis, "no scorable canonical/variant pairs", "Every paired response errored.");
     const correctedP = corrected[tested.indexOf(result as (typeof tested)[number])]!;
-    const verdict = classify(result.stats, correctedP);
+    const verdict = classify(result.stats, correctedP, result.canonicalUnparsed);
     return {
       detector_id: result.id,
       detector_version: IMPLEMENTATION,
@@ -384,7 +411,7 @@ export async function runBrowserAudit(
       alternative_explanations: ["ordinary distribution shift", "parser sensitivity", "provider nondeterminism"],
       calibration: "paired sign-flip permutation test; Benjamini-Hochberg across findings",
       item_ids: [],
-      details: { ...result.stats, errored_variant_count: result.errored, decision_rule: verdict.rule },
+      details: { ...result.stats, errored_variant_count: result.errored, canonical_unparsed_count: result.canonicalUnparsed, decision_rule: verdict.rule },
     };
   });
   findings.push(
@@ -417,6 +444,11 @@ export async function runBrowserAudit(
     "Provider keys are used in request memory and are not stored, cached, logged, or serialized into this report by Veritas.",
   ];
   if (failed) limitations.push(`${failed} request(s) failed or were skipped and were excluded from scoring rather than counted as wrong.`);
+  const unparsed = responses.filter((response) => !response.error && response.parsed_answer === null);
+  if (unparsed.length) {
+    const truncated = unparsed.filter((response) => response.finish_reason === "length").length;
+    limitations.push(`${unparsed.length} of ${responses.length} response(s) named no answer choice and were scored as wrong (${truncated} stopped at the output budget). If the model reasons before answering, raise the output budget.`);
+  }
   if (loaded.skipped) limitations.push(`${loaded.skipped} row(s) in the window were malformed (duplicate options or a missing answer key) and were skipped.`);
   if (overall && overall.parent_item_count < 10) limitations.push(`Only ${overall.parent_item_count} paired item(s): paired findings stay inconclusive below 10; audit more items for a decision.`);
 

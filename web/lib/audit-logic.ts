@@ -195,7 +195,7 @@ export function benjaminiHochberg(values: number[]): number[] {
 // Decision rule (mirrors service._Analysis._correct_and_classify)
 // ---------------------------------------------------------------------------------------
 
-export const DECISION = { alpha: 0.05, equivalenceMargin: 0.05, minParentItems: 10 } as const;
+export const DECISION = { alpha: 0.05, equivalenceMargin: 0.05, minParentItems: 10, maxUnparsedFraction: 0.2 } as const;
 
 export type Direction = "supports" | "contradicts" | "inconclusive";
 export type Strength = "direct" | "strong_indirect" | "weak_indirect" | "against" | "inconclusive" | "unavailable";
@@ -224,9 +224,26 @@ export function pairedStats(left: number[], right: number[], seed = 42): PairedS
   };
 }
 
-export function classify(stats: PairedStats, correctedP: number): { direction: Direction; strength: Strength; rule: string } {
+export function classify(
+  stats: PairedStats,
+  correctedP: number,
+  canonicalUnparsed = 0,
+): { direction: Direction; strength: Strength; rule: string } {
   if (stats.parent_item_count < DECISION.minParentItems) {
     return { direction: "inconclusive", strength: "inconclusive", rule: `fewer than ${DECISION.minParentItems} paired parent items` };
+  }
+  // A model whose canonical answers cannot be read (usually a reasoning model cut off by
+  // the output budget) scores 0 everywhere; that zero gap is not evidence of robustness.
+  const unparsed = canonicalUnparsed / stats.parent_item_count;
+  if (unparsed > DECISION.maxUnparsedFraction) {
+    return {
+      direction: "inconclusive",
+      strength: "inconclusive",
+      rule: `${Math.round(unparsed * 100)}% of canonical responses had no parseable answer; the comparison would measure the parser or output budget, not the model`,
+    };
+  }
+  if (stats.canonical_score === 0) {
+    return { direction: "inconclusive", strength: "inconclusive", rule: "no canonical answer was correct, so a drop cannot be observed" };
   }
   if (stats.gap > 0 && stats.ci[0] > 0 && correctedP <= DECISION.alpha) {
     return { direction: "supports", strength: "weak_indirect", rule: `paired drop with interval above 0 and corrected p <= ${DECISION.alpha}` };

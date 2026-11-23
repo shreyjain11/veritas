@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+from email.message import Message
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
@@ -268,3 +269,56 @@ def test_cache_treats_corrupt_entries_as_misses(tmp_path: Path) -> None:
     entry.write_text("{truncated", encoding="utf-8")
     assert cached.generate([ITEM], GenerationConfig())[0].parsed_answer == "b"
     assert cached.misses == 2
+
+
+def test_openai_native_endpoint_uses_current_parameter_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # api.openai.com rejects max_tokens on current models, and reasoning models reject an
+    # explicit temperature; other OpenAI-compatible hosts keep the classic body.
+    def target(model: str, endpoint: str) -> ModelTarget:
+        return _target().model_copy(update={"id": model, "endpoint": endpoint})
+
+    config = GenerationConfig(max_tokens=64)
+    classic = OpenAICompatibleAdapter(target("llama-3.3-70b", "https://api.groq.com/openai/v1"))
+    assert classic.payload(ITEM, config)["max_tokens"] == 64
+    assert classic.payload(ITEM, config)["temperature"] == 0.0
+
+    native = OpenAICompatibleAdapter(target("gpt-4o-mini", "https://api.openai.com/v1"))
+    body = native.payload(ITEM, config)
+    assert body["max_completion_tokens"] == 64 and "max_tokens" not in body
+    assert body["temperature"] == 0.0
+
+    reasoning = OpenAICompatibleAdapter(target("gpt-5-mini", "https://api.openai.com/v1"))
+    assert "temperature" not in reasoning.payload(ITEM, config)
+    routed = OpenAICompatibleAdapter(target("openai/o3", "https://openrouter.ai/api/v1"))
+    assert "temperature" not in routed.payload(ITEM, config)
+    assert routed.payload(ITEM, config)["max_tokens"] == 64
+
+
+def test_rate_limit_retry_after_is_honored_and_capped(monkeypatch: pytest.MonkeyPatch) -> None:
+    def limited(seconds: str) -> HTTPError:
+        headers = Message()
+        headers["Retry-After"] = seconds
+        return HTTPError("https://provider.example", 429, "slow down", headers, io.BytesIO(b""))
+
+    _install(monkeypatch, [limited("7"), limited("9999"), limited("soon"), _ok()])
+    slept: list[float] = []
+    adapter = OpenAICompatibleAdapter(_target(max_retries=3), "TEST_KEY", sleep=slept.append)
+    assert adapter.generate([ITEM], GenerationConfig())[0].attempt == 4
+    assert slept == [7.0, 60.0, 0.0]
+
+
+def test_concurrent_requests_keep_item_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    items = [ITEM.model_copy(update={"id": f"q{index}"}) for index in range(24)]
+
+    def fake_urlopen(request: Any, timeout: float) -> _Body:
+        marker = json.loads(request.data)["messages"][-1]["content"]
+        return _Body(_ok("b" if "Pick one" in marker else "a"))
+
+    monkeypatch.setattr(adapters_module, "urlopen", fake_urlopen)
+    monkeypatch.setenv("TEST_KEY", "sk-test")
+    adapter = OpenAICompatibleAdapter(_target(concurrency=8), "TEST_KEY")
+    responses = adapter.generate(items, GenerationConfig())
+    assert [response.item_id for response in responses] == [item.id for item in items]
+    assert "concurrency" not in responses[0].request

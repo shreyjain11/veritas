@@ -6,6 +6,7 @@ import json
 import os
 import time
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
@@ -28,6 +29,7 @@ from veritas.benchmark_integrity.contracts import (
 from veritas.benchmark_integrity.prompting import (
     chat_messages,
     format_prompt,
+    is_reasoning_model,
     parse_answer,
 )
 
@@ -44,8 +46,9 @@ __all__ = [
 
 # generation.extra keys that configure Veritas itself and are never sent to a provider.
 RESERVED_EXTRA_KEYS = frozenset(
-    {"api_key_env", "responses", "max_retries", "timeout_s", "retry_backoff_s"}
+    {"api_key_env", "responses", "max_retries", "timeout_s", "retry_backoff_s", "concurrency"}
 )
+_MAX_RETRY_AFTER_S = 60.0
 _RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
 
 
@@ -240,6 +243,14 @@ class OpenAICompatibleAdapter:
     with exponential backoff and, if they persist, recorded as an errored response so
     one flaky request cannot discard a long run. Configuration errors (bad key, unknown
     model, malformed request) fail fast because every later request would fail too.
+
+    ``generation.extra`` tunes the transport without reaching the provider: ``concurrency``
+    (parallel requests, default 4), ``max_retries``, ``timeout_s``, ``retry_backoff_s``. A
+    ``Retry-After`` header on a rate-limit response is honored (capped at 60 seconds).
+
+    Two provider quirks are handled so the same spec works everywhere: OpenAI's own API
+    takes ``max_completion_tokens`` rather than ``max_tokens``, and reasoning models reject
+    an explicit ``temperature``, so it is omitted for them.
     """
 
     adapter_id = "openai_compatible"
@@ -270,6 +281,9 @@ class OpenAICompatibleAdapter:
         self._max_retries = max(0, int(extra.get("max_retries", 3)))
         self._timeout = float(extra.get("timeout_s", 60))
         self._backoff = float(extra.get("retry_backoff_s", 1.0))
+        self._concurrency = max(1, int(extra.get("concurrency", 4)))
+        self._openai_native = (parsed.hostname or "").lower() == "api.openai.com"
+        self._reasoning = is_reasoning_model(target.id)
 
     def capabilities(self) -> ModelCapabilities:
         return self._target.capabilities
@@ -279,9 +293,12 @@ class OpenAICompatibleAdapter:
         payload: dict[str, Any] = {
             "model": self._target.id,
             "messages": chat_messages(item, self._target.system_prompt),
-            "temperature": config.temperature,
-            "max_tokens": config.max_tokens,
         }
+        if not self._reasoning:
+            payload["temperature"] = config.temperature
+        payload["max_completion_tokens" if self._openai_native else "max_tokens"] = (
+            config.max_tokens
+        )
         if config.seed is not None:
             payload["seed"] = config.seed
         if self._target.capabilities.token_probabilities:
@@ -297,49 +314,45 @@ class OpenAICompatibleAdapter:
         key = os.environ.get(self._api_key_env)
         if not key and self._require_api_key:
             raise RuntimeError(f"missing API key environment variable {self._api_key_env}")
-        responses: list[ModelResponse] = []
-        for item in items:
-            payload = self.payload(item, config)
-            started = time.monotonic()
-            provenance: dict[str, Any] = {
-                "adapter": self.adapter_id,
-                "endpoint": self._target.endpoint,
-            }
-            try:
-                body, attempt = self._post(payload, key)
-                choice = body["choices"][0]
-                message = choice.get("message") or {}
-                text = str(message.get("content") or "")
-            except _TransientError as exc:
-                responses.append(
-                    _error_response(item, payload, str(exc), self._max_retries + 1, provenance)
-                )
-                continue
-            except (KeyError, IndexError, TypeError, AttributeError):
-                responses.append(
-                    _error_response(
-                        item, payload, "malformed provider response (no choices)", 1, provenance
-                    )
-                )
-                continue
-            raw_usage = body.get("usage")
-            usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
-            responses.append(
-                ModelResponse(
-                    item_id=item.id,
-                    request=payload,
-                    normalized_request=payload,
-                    raw_text=text,
-                    parsed_answer=parse_answer(item, text),
-                    token_logprobs=_openai_logprobs(choice),
-                    latency_ms=(time.monotonic() - started) * 1000,
-                    token_count=usage.get("total_tokens"),
-                    finish_reason=choice.get("finish_reason"),
-                    attempt=attempt,
-                    provenance=provenance,
-                )
+        if self._concurrency == 1 or len(items) < 2:
+            return [self._one(item, config, key) for item in items]
+        # Requests are independent; the executor preserves input order.
+        with ThreadPoolExecutor(max_workers=min(self._concurrency, len(items))) as pool:
+            return list(pool.map(lambda item: self._one(item, config, key), items))
+
+    def _one(self, item: BenchmarkItem, config: GenerationConfig, key: str | None) -> ModelResponse:
+        payload = self.payload(item, config)
+        started = time.monotonic()
+        provenance: dict[str, Any] = {
+            "adapter": self.adapter_id,
+            "endpoint": self._target.endpoint,
+        }
+        try:
+            body, attempt = self._post(payload, key)
+            choice = body["choices"][0]
+            message = choice.get("message") or {}
+            text = str(message.get("content") or "")
+        except _TransientError as exc:
+            return _error_response(item, payload, str(exc), self._max_retries + 1, provenance)
+        except (KeyError, IndexError, TypeError, AttributeError):
+            return _error_response(
+                item, payload, "malformed provider response (no choices)", 1, provenance
             )
-        return responses
+        raw_usage = body.get("usage")
+        usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
+        return ModelResponse(
+            item_id=item.id,
+            request=payload,
+            normalized_request=payload,
+            raw_text=text,
+            parsed_answer=parse_answer(item, text),
+            token_logprobs=_openai_logprobs(choice),
+            latency_ms=(time.monotonic() - started) * 1000,
+            token_count=usage.get("total_tokens"),
+            finish_reason=choice.get("finish_reason"),
+            attempt=attempt,
+            provenance=provenance,
+        )
 
     def _post(self, payload: dict[str, Any], key: str | None) -> tuple[dict[str, Any], int]:
         headers = {"Content-Type": "application/json", "User-Agent": "veritas/2"}
@@ -347,6 +360,7 @@ class OpenAICompatibleAdapter:
             headers["Authorization"] = f"Bearer {key}"
         data = json.dumps(payload).encode()
         last_error = "request failed"
+        retry_after: float | None = None
         for attempt in range(1, self._max_retries + 2):
             request = Request(
                 self._endpoint + "/chat/completions", data=data, headers=headers, method="POST"
@@ -364,11 +378,22 @@ class OpenAICompatibleAdapter:
                         f"model endpoint rejected the request (HTTP {exc.code}): {_error_body(exc)}"
                     ) from exc
                 last_error = f"HTTP {exc.code} after {attempt} attempt(s)"
+                retry_after = _retry_after(exc)
             except (URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
                 last_error = f"{type(exc).__name__} after {attempt} attempt(s)"
             if attempt <= self._max_retries:
-                self._sleep(self._backoff * 2 ** (attempt - 1))
+                self._sleep(max(self._backoff * 2 ** (attempt - 1), retry_after or 0.0))
+                retry_after = None
         raise _TransientError(last_error)
+
+
+def _retry_after(exc: HTTPError) -> float | None:
+    """Seconds requested by a ``Retry-After`` header (delta form only), capped."""
+    try:
+        seconds = float(exc.headers.get("Retry-After", ""))
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return min(seconds, _MAX_RETRY_AFTER_S) if seconds > 0 else None
 
 
 def _error_body(exc: HTTPError) -> str:
